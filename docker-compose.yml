@@ -1,0 +1,15 @@
+services:
+  harness:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-8787}:8787"
+    env_file:
+      - .env
+    volumes:
+      - harness_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  harness_data:

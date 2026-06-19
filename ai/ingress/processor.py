@@ -1,0 +1,66 @@
+import asyncio
+import logging
+import os
+
+from harness.runner import run_conversation_turn
+from ingress.models import InboundEvent
+from ops.lifecycle import Lifecycle, record_event
+
+logger = logging.getLogger(__name__)
+
+MAX_RETRIES = int(os.getenv("INGRESS_MAX_RETRIES", "3"))
+RETRY_BASE_SECONDS = float(os.getenv("INGRESS_RETRY_BASE_SECONDS", "1.5"))
+
+
+async def process_inbound(event: InboundEvent) -> dict:
+    record_event(
+        delivery_id=event.delivery_id,
+        message_id=event.message_id,
+        conversation_id=event.conversation_id,
+        status=Lifecycle.RECEIVED,
+        detail=event.text[:120],
+    )
+
+    last_error: Exception | None = None
+
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            record_event(
+                delivery_id=event.delivery_id,
+                message_id=event.message_id,
+                conversation_id=event.conversation_id,
+                status=Lifecycle.PROCESSING,
+                detail=f"attempt={attempt}",
+            )
+
+            result = await run_conversation_turn(event)
+
+            record_event(
+                delivery_id=event.delivery_id,
+                message_id=event.message_id,
+                conversation_id=event.conversation_id,
+                status=Lifecycle.REPLIED if result.get("outbound_text") else Lifecycle.IGNORED,
+                detail=result.get("intent", ""),
+            )
+
+            return {
+                "processed": True,
+                "conversation_id": event.conversation_id,
+                "phone": event.phone,
+                "intent": result.get("intent"),
+                "replied": bool(result.get("outbound_text")),
+            }
+        except Exception as error:
+            last_error = error
+            logger.exception("Falha ao processar mensagem (tentativa %s)", attempt)
+            if attempt < MAX_RETRIES:
+                await asyncio.sleep(RETRY_BASE_SECONDS * attempt)
+
+    record_event(
+        delivery_id=event.delivery_id,
+        message_id=event.message_id,
+        conversation_id=event.conversation_id,
+        status=Lifecycle.FAILED,
+        detail=str(last_error),
+    )
+    raise last_error or RuntimeError("processamento falhou")
