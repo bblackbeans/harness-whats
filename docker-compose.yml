@@ -9,6 +9,7 @@ services:
       - .env
     volumes:
       - harness_data:/app/data
+      - ./tenants:/app/tenants:ro
     restart: unless-stopped
 
 volumes:

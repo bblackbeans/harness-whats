@@ -20,7 +20,9 @@ from integrations.chatwoot import (
     send_template,
     verify_webhook_signature,
 )
+from knowledge import chunks_by_tenant, is_rag_enabled, sync_tenant_index
 from ops.lifecycle import Lifecycle, recent_events, record_event
+from tenants.registry import get_tenant, list_tenants
 
 load_dotenv()
 
@@ -41,6 +43,7 @@ class DispatchRequest(BaseModel):
     message: str = ""
     template_name: str | None = None
     language: str = "pt_BR"
+    tenant_id: str | None = None
     account_id: int | None = None
     contacts: list[DispatchContact]
 
@@ -63,18 +66,50 @@ class DispatchResult(BaseModel):
 
 @app.get("/health")
 def health():
+    tenant_list = list_tenants()
+    tenants = [
+        {
+            "id": tenant.id,
+            "name": tenant.name,
+            "model": tenant.model.name,
+            "inbox_ids": tenant.routing.chatwoot_inbox_ids,
+            "rag_enabled": tenant.rag.enabled,
+            "rag_chunks": chunks_by_tenant([tenant.id])[tenant.id],
+            "handoff_enabled": tenant.handoff.enabled,
+        }
+        for tenant in tenant_list
+    ]
     return {
         "status": "ok",
+        "tenant_id": os.getenv("TENANT_ID") or None,
+        "tenants": tenants,
         "chatwoot_configured": is_configured(),
         "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
+        "rag": {
+            "enabled": is_rag_enabled(),
+            "chunks_by_tenant": chunks_by_tenant([tenant.id for tenant in tenant_list]),
+        },
         "architecture": {
             "ingress": "async_webhook_with_dedupe_and_retries",
             "context": "summarization_policy",
-            "memory": "semantic_sqlite",
+            "memory": "semantic_sqlite_per_tenant",
+            "knowledge": "rag_sqlite_per_tenant",
+            "handoff": "chatwoot_toggle_open",
             "agent": "langgraph_component",
-            "channel": "chatwoot_whatsapp_cloud",
+            "channel": "chatwoot_multichannel",
+            "tenants": "config_per_client",
         },
     }
+
+
+@app.post("/ops/reindex")
+def ops_reindex(tenant_id: str | None = None):
+    targets = [get_tenant(tenant_id)] if tenant_id else list_tenants()
+    results = []
+    for tenant in targets:
+        stats = sync_tenant_index(tenant)
+        results.append({"tenant_id": tenant.id, **stats})
+    return {"reindexed": results}
 
 
 @app.get("/ops/recent")
@@ -112,6 +147,7 @@ async def chatwoot_webhook(request: Request, background_tasks: BackgroundTasks):
         text=inbound["text"],
         conversation_id=inbound["conversation_id"],
         account_id=inbound["account_id"],
+        inbox_id=inbound.get("inbox_id"),
         contact_name=inbound.get("contact_name", ""),
         message_id=inbound.get("message_id", ""),
         delivery_id=delivery_id,
@@ -158,7 +194,11 @@ async def dispatch_messages(body: DispatchRequest):
                     content=body.message,
                 )
             else:
-                text = generate_dispatch_message(body.message, contact.variables)
+                text = generate_dispatch_message(
+                    body.message,
+                    contact.variables,
+                    tenant_id=body.tenant_id,
+                )
                 response = await send_message(account_id, contact.conversation_id, text)
 
             ok = bool(response.get("ok"))

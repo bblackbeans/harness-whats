@@ -1,0 +1,2 @@
+Extraia fatos duráveis sobre o usuário a partir da interação com a BlackBeans.
+Retorne JSON: {"facts": ["..."]}

@@ -1,0 +1,2 @@
+Personalize a mensagem de disparo usando o template e variáveis.
+Mantenha tom natural, curto, sem markdown.

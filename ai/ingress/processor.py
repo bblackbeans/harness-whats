@@ -35,12 +35,20 @@ async def process_inbound(event: InboundEvent) -> dict:
 
             result = await run_conversation_turn(event)
 
+            lifecycle = result.get("lifecycle_status", "")
+            if lifecycle == "handed_off":
+                status = Lifecycle.HANDED_OFF
+            elif result.get("outbound_text"):
+                status = Lifecycle.REPLIED
+            else:
+                status = Lifecycle.IGNORED
+
             record_event(
                 delivery_id=event.delivery_id,
                 message_id=event.message_id,
                 conversation_id=event.conversation_id,
-                status=Lifecycle.REPLIED if result.get("outbound_text") else Lifecycle.IGNORED,
-                detail=result.get("intent", ""),
+                status=status,
+                detail=result.get("handoff_reason") or result.get("intent", ""),
             )
 
             return {
@@ -49,6 +57,7 @@ async def process_inbound(event: InboundEvent) -> dict:
                 "phone": event.phone,
                 "intent": result.get("intent"),
                 "replied": bool(result.get("outbound_text")),
+                "handoff": bool(result.get("handoff_to_human")),
             }
         except Exception as error:
             last_error = error

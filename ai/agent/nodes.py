@@ -1,4 +1,5 @@
 import json
+import os
 
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import JsonOutputParser
@@ -7,38 +8,30 @@ from langchain_core.prompts import ChatPromptTemplate
 from agent.llm import get_llm
 from context.policy import build_agent_context
 from harness.state import HarnessState
+from handoff.policy import resolve_handoff
 from memory.semantic import recall, store
+from tenants import get_tenant, load_prompt
 
-AGENT_PROMPT = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "Você é o componente de raciocínio de um harness WhatsApp. "
-            "Use o contexto fornecido para classificar e responder. "
-            "Responda apenas JSON com: "
-            "intent (greeting|question|support|sales|other), "
-            "should_reply (boolean), "
-            "reply (string curta em português ou null), "
-            "new_facts (array de fatos duráveis sobre o usuário, ou []).",
-        ),
-        ("human", "{context}"),
-    ]
+_DEFAULT_AGENT_PROMPT = (
+    "Você é um assistente virtual de atendimento por mensagem. "
+    "Responda apenas JSON com: intent, should_reply, reply, new_facts."
+)
+_DEFAULT_FACTS_PROMPT = (
+    'Extraia fatos duráveis sobre o usuário. Retorne JSON: {"facts": ["..."]}'
+)
+_DEFAULT_DISPATCH_PROMPT = (
+    "Personalize a mensagem de disparo usando o template e variáveis. "
+    "Mantenha tom natural, curto, sem markdown."
 )
 
-FACTS_PROMPT = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "Extraia fatos duráveis sobre o usuário a partir da interação. "
-            "Retorne JSON: {\"facts\": [\"...\"]}",
-        ),
-        ("human", "Mensagem: {text}\nResposta: {reply}"),
-    ]
-)
+
+def _tenant_from_state(state: HarnessState):
+    return get_tenant(state.get("tenant_id", "default"))
 
 
 def load_semantic_memory(state: HarnessState) -> HarnessState:
-    facts = recall(state["phone"])
+    tenant = _tenant_from_state(state)
+    facts = recall(tenant.id, state["phone"])
     return {**state, "semantic_facts": facts}
 
 
@@ -52,12 +45,13 @@ def ingest_message(state: HarnessState) -> HarnessState:
 def manage_context(state: HarnessState) -> HarnessState:
     from context.policy import should_summarize, summarize_messages, trim_messages
 
+    tenant = _tenant_from_state(state)
     messages = state.get("messages", [])
     summary = state.get("conversation_summary", "")
 
-    if should_summarize(messages):
-        summary = summarize_messages(messages, summary)
-        messages = trim_messages(messages)
+    if should_summarize(messages, tenant):
+        summary = summarize_messages(messages, summary, tenant)
+        messages = trim_messages(messages, tenant)
 
     return {
         **state,
@@ -69,24 +63,55 @@ def manage_context(state: HarnessState) -> HarnessState:
             conversation_summary=summary,
             semantic_facts=state.get("semantic_facts", []),
             recent_messages=messages,
+            tenant=tenant,
         ),
     }
 
 
+def retrieve_knowledge(state: HarnessState) -> HarnessState:
+    tenant = _tenant_from_state(state)
+    chunks = retrieve_knowledge_chunks(tenant, state["inbound_text"])
+    knowledge_block = format_knowledge_block(chunks)
+    base_context = state.get("agent_context", "")
+    agent_context = f"{base_context}\n\n{knowledge_block}" if base_context else knowledge_block
+
+    return {
+        **state,
+        "retrieved_knowledge": [chunk["text"] for chunk in chunks],
+        "agent_context": agent_context,
+    }
+
+
 def run_agent(state: HarnessState) -> HarnessState:
-    llm = get_llm()
+    tenant = _tenant_from_state(state)
+    llm = get_llm(tenant)
     text = state["inbound_text"]
+    system_prompt = load_prompt(tenant, "agent_system", _DEFAULT_AGENT_PROMPT)
+    agent_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_prompt),
+            ("human", "{context}"),
+        ]
+    )
 
     if not llm:
+        handoff, reason = resolve_handoff(
+            inbound_text=text,
+            retrieved_knowledge=state.get("retrieved_knowledge", []),
+            tenant=tenant,
+            llm_handoff=False,
+        )
         return {
             **state,
             "intent": "other",
             "should_reply": True,
             "outbound_text": f"Recebi sua mensagem: {text}",
+            "handoff_to_human": handoff,
+            "handoff_reason": reason,
             "new_semantic_facts": [],
         }
 
-    chain = AGENT_PROMPT | llm | JsonOutputParser()
+    chain = agent_prompt | llm | JsonOutputParser()
     try:
         result = chain.invoke({"context": state.get("agent_context", text)})
     except Exception:
@@ -94,24 +119,42 @@ def run_agent(state: HarnessState) -> HarnessState:
             "intent": "other",
             "should_reply": True,
             "reply": f"Recebi sua mensagem: {text}",
+            "handoff_to_human": False,
             "new_facts": [],
         }
+
+    llm_handoff = bool(result.get("handoff_to_human", False))
+    handoff, reason = resolve_handoff(
+        inbound_text=text,
+        retrieved_knowledge=state.get("retrieved_knowledge", []),
+        tenant=tenant,
+        llm_handoff=llm_handoff,
+    )
 
     return {
         **state,
         "intent": str(result.get("intent", "other")),
         "should_reply": bool(result.get("should_reply", True)),
         "outbound_text": str(result.get("reply") or ""),
+        "handoff_to_human": handoff,
+        "handoff_reason": reason,
         "new_semantic_facts": [str(f) for f in result.get("new_facts", []) if f],
     }
 
 
 def persist_semantic_memory(state: HarnessState) -> HarnessState:
+    tenant = _tenant_from_state(state)
     facts = state.get("new_semantic_facts", [])
     if not facts and state.get("outbound_text"):
-        llm = get_llm()
+        llm = get_llm(tenant)
         if llm:
-            chain = FACTS_PROMPT | llm | JsonOutputParser()
+            facts_prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", load_prompt(tenant, "facts_system", _DEFAULT_FACTS_PROMPT)),
+                    ("human", "Mensagem: {text}\nResposta: {reply}"),
+                ]
+            )
+            chain = facts_prompt | llm | JsonOutputParser()
             try:
                 extracted = chain.invoke(
                     {"text": state["inbound_text"], "reply": state["outbound_text"]}
@@ -121,15 +164,20 @@ def persist_semantic_memory(state: HarnessState) -> HarnessState:
                 facts = []
 
     if facts:
-        store(state["phone"], facts)
+        store(tenant.id, state["phone"], facts)
         merged = list(dict.fromkeys(state.get("semantic_facts", []) + facts))
         return {**state, "semantic_facts": merged, "new_semantic_facts": facts}
 
     return state
 
 
-def generate_dispatch_message(template: str, variables: dict) -> str:
-    llm = get_llm()
+def generate_dispatch_message(
+    template: str,
+    variables: dict,
+    tenant_id: str | None = None,
+) -> str:
+    tenant = get_tenant(tenant_id or os.getenv("TENANT_ID", "default"))
+    llm = get_llm(tenant)
     if not llm:
         message = template
         for key, value in variables.items():
@@ -138,11 +186,7 @@ def generate_dispatch_message(template: str, variables: dict) -> str:
 
     prompt = ChatPromptTemplate.from_messages(
         [
-            (
-                "system",
-                "Personalize a mensagem de disparo WhatsApp usando o template e variáveis. "
-                "Mantenha tom natural, curto, sem markdown.",
-            ),
+            ("system", load_prompt(tenant, "dispatch_system", _DEFAULT_DISPATCH_PROMPT)),
             ("human", "Template:\n{template}\n\nVariáveis:\n{variables}"),
         ]
     )

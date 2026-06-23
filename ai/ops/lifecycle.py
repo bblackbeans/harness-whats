@@ -16,6 +16,7 @@ class Lifecycle:
     RECEIVED = "received"
     PROCESSING = "processing"
     REPLIED = "replied"
+    HANDED_OFF = "handed_off"
     IGNORED = "ignored"
     FAILED = "failed"
     DUPLICATE = "duplicate"

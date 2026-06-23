@@ -92,11 +92,31 @@ def _message_content(payload: dict) -> str:
     return str(payload.get("content", "")).strip()
 
 
+def _inbox_id(payload: dict) -> int | None:
+    conversation = payload.get("conversation") or {}
+    if conversation.get("inbox_id") is not None:
+        return int(conversation["inbox_id"])
+
+    inbox = payload.get("inbox")
+    if isinstance(inbox, dict) and inbox.get("id") is not None:
+        return int(inbox["id"])
+
+    return None
+
+
+def _conversation_status(payload: dict) -> str:
+    conversation = payload.get("conversation") or {}
+    return str(conversation.get("status", "")).lower()
+
+
 def extract_inbound_message(payload: dict) -> dict | None:
     if str(payload.get("event", "")).lower() != "message_created":
         return None
 
     if _message_type(payload) != "incoming":
+        return None
+
+    if _conversation_status(payload) == "open":
         return None
 
     content = _message_content(payload)
@@ -121,9 +141,45 @@ def extract_inbound_message(payload: dict) -> dict | None:
         "text": content,
         "conversation_id": conversation_id,
         "account_id": account_id,
+        "inbox_id": _inbox_id(payload),
         "message_id": message_id,
+        "conversation_status": _conversation_status(payload),
         "raw": payload,
     }
+
+
+async def send_private_note(account_id: int, conversation_id: int, content: str) -> dict:
+    if not CHATWOOT_BOT_TOKEN or not CHATWOOT_BASE_URL:
+        return {"ok": False, "error": "Chatwoot não configurado"}
+
+    url = (
+        f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}"
+        f"/conversations/{conversation_id}/messages"
+    )
+    payload = {"content": content, "message_type": "outgoing", "private": True}
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(url, json=payload, headers=_headers())
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        return {"ok": True, "data": response.json()}
+
+
+async def handoff_conversation(account_id: int, conversation_id: int) -> dict:
+    if not CHATWOOT_BOT_TOKEN or not CHATWOOT_BASE_URL:
+        return {"ok": False, "error": "Chatwoot não configurado"}
+
+    url = (
+        f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}"
+        f"/conversations/{conversation_id}/toggle_status"
+    )
+    payload = {"status": "open"}
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(url, json=payload, headers=_headers())
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        return {"ok": True, "data": response.json()}
 
 
 async def send_message(account_id: int, conversation_id: int, content: str) -> dict:

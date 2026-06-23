@@ -7,6 +7,7 @@ class InboundEvent:
     text: str
     conversation_id: int
     account_id: int
+    inbox_id: int | None = None
     contact_name: str = ""
     message_id: str = ""
     delivery_id: str = ""

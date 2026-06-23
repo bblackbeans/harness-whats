@@ -1,0 +1,27 @@
+{
+  "id": "default",
+  "name": "Cliente padrão",
+  "language": "pt-BR",
+  "model": {
+    "name": "gpt-4o-mini",
+    "temperature": 0.3,
+    "api_key_env": "OPENAI_API_KEY"
+  },
+  "routing": {
+    "chatwoot_account_ids": [],
+    "chatwoot_inbox_ids": []
+  },
+  "context": {
+    "summarize_after": 12,
+    "keep_recent": 6
+  },
+  "rag": {
+    "enabled": true,
+    "top_k": 5
+  },
+  "handoff": {
+    "enabled": true,
+    "on_no_knowledge": true,
+    "private_note_enabled": true
+  }
+}

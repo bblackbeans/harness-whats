@@ -1,0 +1,51 @@
+{
+  "workflow_version": "1.2.0",
+  "timestamps": {
+    "started": "2026-06-23T19:00:00Z",
+    "last_updated": "2026-06-23T19:15:00Z",
+    "completed": "2026-06-23T19:15:00Z"
+  },
+  "mode": "initial_scan",
+  "scan_level": "deep",
+  "project_root": "/home/kaue-ronald/Área de trabalho/lagnchain-automation",
+  "project_knowledge": "docs",
+  "completed_steps": [
+    {"step": "step_1", "status": "completed", "summary": "Monólito classificado como backend Python com config multi-tenant"},
+    {"step": "step_2", "status": "completed", "summary": "Sem README prévio; contexto inferido do código e conversas"},
+    {"step": "step_3", "status": "completed", "summary": "Stack: FastAPI + LangGraph + LangChain + OpenAI + Chatwoot"},
+    {"step": "step_4", "status": "completed", "summary": "APIs e modelos de dados documentados"},
+    {"step": "step_5", "status": "completed", "summary": "Árvore de diretórios anotada"},
+    {"step": "step_6", "status": "completed", "summary": "Guia de desenvolvimento e deploy documentados"},
+    {"step": "step_8", "status": "completed", "summary": "Arquitetura documentada"},
+    {"step": "step_9", "status": "completed", "summary": "Documentação de suporte gerada"},
+    {"step": "step_10", "status": "completed", "summary": "index.md gerado"},
+    {"step": "step_11", "status": "completed", "summary": "Validação concluída"},
+    {"step": "step_12", "status": "completed", "summary": "Workflow finalizado"}
+  ],
+  "current_step": "completed",
+  "project_classification": {
+    "repository_type": "monolith",
+    "parts_count": 1,
+    "primary_tech": "Python FastAPI + LangGraph",
+    "project_types": [
+      {"part_id": "harness", "project_type_id": "backend", "display_name": "WhatsApp/Telegram AI Harness"}
+    ]
+  },
+  "findings": {
+    "technology_stack": "FastAPI, LangGraph, LangChain OpenAI, Chatwoot, SQLite",
+    "api_count": 4,
+    "table_count": 1
+  },
+  "outputs_generated": [
+    "project-scan-report.json",
+    "index.md",
+    "project-overview.md",
+    "architecture.md",
+    "source-tree-analysis.md",
+    "api-contracts.md",
+    "data-models.md",
+    "component-inventory.md",
+    "development-guide.md",
+    "deployment-guide.md"
+  ]
+}
