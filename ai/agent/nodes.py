@@ -8,6 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from agent.llm import get_llm
 from context.policy import build_agent_context
 from harness.state import HarnessState
+from knowledge.retrieve import format_knowledge_block, retrieve_knowledge_chunks
 from handoff.policy import resolve_handoff
 from memory.semantic import recall, store
 from tenants import get_tenant, load_prompt
