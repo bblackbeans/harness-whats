@@ -38,7 +38,9 @@ async def process_inbound(event: InboundEvent) -> dict:
             lifecycle = result.get("lifecycle_status", "")
             if lifecycle == "handed_off":
                 status = Lifecycle.HANDED_OFF
-            elif result.get("outbound_text"):
+            elif lifecycle == "send_failed":
+                status = Lifecycle.FAILED
+            elif lifecycle == "replied" or result.get("outbound_text"):
                 status = Lifecycle.REPLIED
             else:
                 status = Lifecycle.IGNORED
