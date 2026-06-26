@@ -11,4 +11,5 @@ class InboundEvent:
     contact_name: str = ""
     message_id: str = ""
     delivery_id: str = ""
+    conversation_status: str = ""
     raw: dict = field(default_factory=dict)

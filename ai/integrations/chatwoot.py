@@ -109,29 +109,53 @@ def _conversation_status(payload: dict) -> str:
     return str(conversation.get("status", "")).lower()
 
 
-def extract_inbound_message(payload: dict) -> dict | None:
+def conversation_status(payload: dict) -> str:
+    return _conversation_status(payload)
+
+
+def ignore_reason(payload: dict) -> str | None:
     if str(payload.get("event", "")).lower() != "message_created":
-        return None
+        return "not_message_created"
 
     if _message_type(payload) != "incoming":
-        return None
+        return "not_incoming"
 
-    if _conversation_status(payload) == "open":
-        return None
+    status = _conversation_status(payload)
+    if status == "open":
+        return "conversation_open_human_active"
 
     content = _message_content(payload)
     if not content:
-        return None
+        return "empty_content"
 
     conversation_id = _conversation_id(payload)
     account_id = _account_id(payload)
     if conversation_id is None or account_id is None:
-        return None
+        return "missing_conversation_or_account"
 
     sender = payload.get("sender") or (payload.get("message") or {}).get("sender") or {}
     if str(sender.get("type", "")).lower() in {"user", "agent_bot"}:
+        return "sender_not_contact"
+
+    return None
+
+
+def webhook_conversation_id(payload: dict) -> int | None:
+    return _conversation_id(payload)
+
+
+def webhook_message_id(payload: dict) -> str:
+    message = payload.get("message") or {}
+    return str(payload.get("id") or message.get("id") or "")
+
+
+def extract_inbound_message(payload: dict) -> dict | None:
+    if ignore_reason(payload):
         return None
 
+    content = _message_content(payload)
+    conversation_id = _conversation_id(payload)
+    account_id = _account_id(payload)
     message = payload.get("message") or {}
     message_id = str(payload.get("id") or message.get("id") or "")
 
@@ -174,6 +198,24 @@ async def handoff_conversation(account_id: int, conversation_id: int) -> dict:
         f"/conversations/{conversation_id}/toggle_status"
     )
     payload = {"status": "open"}
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(url, json=payload, headers=_headers())
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        return {"ok": True, "data": response.json()}
+
+
+async def resume_bot_conversation(account_id: int, conversation_id: int) -> dict:
+    """Devolve a conversa ao Agent Bot (status pending) na mesma thread."""
+    if not CHATWOOT_BOT_TOKEN or not CHATWOOT_BASE_URL:
+        return {"ok": False, "error": "Chatwoot não configurado"}
+
+    url = (
+        f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}"
+        f"/conversations/{conversation_id}/toggle_status"
+    )
+    payload = {"status": "pending"}
 
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.post(url, json=payload, headers=_headers())

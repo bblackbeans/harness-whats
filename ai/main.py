@@ -15,10 +15,13 @@ from ingress.processor import process_inbound
 from integrations.chatwoot import (
     default_account_id,
     extract_inbound_message,
+    ignore_reason,
     is_configured,
     send_message,
     send_template,
     verify_webhook_signature,
+    webhook_conversation_id,
+    webhook_message_id,
 )
 from knowledge import chunks_by_tenant, is_rag_enabled, sync_tenant_index
 from ops.lifecycle import Lifecycle, recent_events, record_event
@@ -112,6 +115,30 @@ def ops_reindex(tenant_id: str | None = None):
     return {"reindexed": results}
 
 
+@app.post("/ops/resume-bot")
+async def ops_resume_bot(
+    conversation_id: int,
+    account_id: int | None = None,
+    tenant_id: str | None = None,
+):
+    """Devolve a conversa ao bot (open/resolved → pending) na mesma thread."""
+    try:
+        resolved_account_id = account_id or default_account_id()
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    from handoff.resume import resume_conversation_for_tenant
+
+    result = await resume_conversation_for_tenant(
+        account_id=resolved_account_id,
+        conversation_id=conversation_id,
+        tenant_id=tenant_id,
+    )
+    if not result.get("ok"):
+        raise HTTPException(status_code=502, detail=result.get("error", "falha ao reativar bot"))
+    return {"ok": True, "conversation_id": conversation_id, "status": "pending"}
+
+
 @app.get("/ops/recent")
 def ops_recent(limit: int = 50):
     return {"events": recent_events(limit)}
@@ -131,7 +158,17 @@ async def chatwoot_webhook(request: Request, background_tasks: BackgroundTasks):
     inbound = extract_inbound_message(payload)
 
     if not inbound:
-        return {"ignored": True}
+        reason = ignore_reason(payload) or "ignored"
+        conversation_id = webhook_conversation_id(payload) or 0
+        if reason == "conversation_open_human_active" and conversation_id:
+            record_event(
+                delivery_id=delivery_id,
+                message_id=webhook_message_id(payload),
+                conversation_id=conversation_id,
+                status=Lifecycle.IGNORED,
+                detail=reason,
+            )
+        return {"ignored": True, "reason": reason}
 
     if is_duplicate(delivery_id or inbound.get("message_id", "")):
         record_event(
@@ -151,6 +188,7 @@ async def chatwoot_webhook(request: Request, background_tasks: BackgroundTasks):
         contact_name=inbound.get("contact_name", ""),
         message_id=inbound.get("message_id", ""),
         delivery_id=delivery_id,
+        conversation_status=inbound.get("conversation_status", ""),
         raw=inbound.get("raw", payload),
     )
 

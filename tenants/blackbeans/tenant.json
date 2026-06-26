@@ -24,6 +24,7 @@
     "message": "Vou encaminhar você para um consultor da BlackBeans. Aguarde um momento, por favor.",
     "keywords": ["atendente", "humano", "pessoa", "consultor"],
     "on_no_knowledge": true,
-    "private_note_enabled": true
+    "private_note_enabled": true,
+    "auto_resume_on_resolved": true
   }
 }

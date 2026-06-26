@@ -121,6 +121,52 @@ Arquivos principais:
 
 ---
 
+## Como devolver ao bot (mesma conversa)
+
+### O problema do botão "Resolver"
+
+No Chatwoot com Agent Bot, **não use "Resolver"** para voltar o cliente ao bot.
+
+| Ação | O que acontece |
+|---|---|
+| Humano responde no painel | Status vira `open` → bot para |
+| Clica **Resolver** | Conversa fecha (`resolved`) |
+| Cliente manda mensagem nova | Chatwoot pode criar **outra conversa** (ID diferente) |
+| Você vê uma thread, o bot atende outra | Mensagens somem do painel |
+
+### Forma correta: devolver ao bot (`pending`)
+
+Enquanto a conversa ainda está **aberta** (`open`), devolva ao bot **sem resolver**:
+
+```
+POST /ops/resume-bot?conversation_id=ID&account_id=2
+```
+
+Ou no Chatwoot (API): `toggle_status` → `{ "status": "pending" }`
+
+Isso mantém a **mesma conversa** e o bot volta a responder.
+
+### Se já clicou em Resolver
+
+Com `auto_resume_on_resolved: true` (padrão no `tenant.json`), quando o cliente
+manda mensagem numa conversa `resolved`, o harness tenta reativar o bot na **mesma thread**
+antes de responder.
+
+Se o Chatwoot já tiver criado uma conversa nova, use `/ops/resume-bot` na conversa
+que está com status `open` e peça ao cliente para continuar nela — ou resolva as
+conversas duplicadas manualmente.
+
+### Fluxo recomendado
+
+```
+1. Bot atende (pending)
+2. Humano assume (open) — bot para
+3. Humano termina → POST /ops/resume-bot (pending)   ← NÃO clique Resolver
+4. Cliente manda mensagem → mesma conversa, bot responde
+```
+
+---
+
 ## Como testar
 
 1. No Telegram: *"Quero falar com um atendente"*

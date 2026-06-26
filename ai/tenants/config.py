@@ -47,6 +47,7 @@ class HandoffConfig:
     )
     on_no_knowledge: bool = True
     private_note_enabled: bool = True
+    auto_resume_on_resolved: bool = True
 
 
 @dataclass(frozen=True)

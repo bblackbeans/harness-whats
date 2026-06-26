@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 
+from handoff.resume import ensure_bot_controls_conversation
 from harness.runner import run_conversation_turn
 from ingress.models import InboundEvent
 from ops.lifecycle import Lifecycle, record_event
@@ -32,6 +33,12 @@ async def process_inbound(event: InboundEvent) -> dict:
                 status=Lifecycle.PROCESSING,
                 detail=f"attempt={attempt}",
             )
+
+            resume_result = await ensure_bot_controls_conversation(event)
+            if not resume_result.get("ok") and not resume_result.get("skipped"):
+                raise RuntimeError(
+                    f"falha ao reativar bot: {resume_result.get('error', 'unknown')}"
+                )
 
             result = await run_conversation_turn(event)
 
