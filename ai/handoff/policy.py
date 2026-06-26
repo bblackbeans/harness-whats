@@ -54,9 +54,23 @@ def is_general_assistant_question(text: str) -> bool:
     return any(signal in normalized for signal in _GENERAL_REPLY_SIGNALS)
 
 
-def is_commercial_question(text: str) -> bool:
+# Perguntas informativas da empresa — não são comerciais.
+_INFORMATIONAL_SIGNALS = (
+    "contato",
+    "e-mail",
+    "email",
+    "telefone",
+    "whatsapp",
+    "site",
+    "endereço",
+    "endereco",
+    "falar com",
+)
+
+
+def is_informational_question(text: str) -> bool:
     normalized = _normalize(text)
-    return any(signal in normalized for signal in _COMMERCIAL_SIGNALS)
+    return any(signal in normalized for signal in _INFORMATIONAL_SIGNALS)
 
 
 def should_handoff_no_knowledge(
@@ -87,6 +101,7 @@ def resolve_handoff(
     retrieved_knowledge: list[str],
     tenant: TenantConfig,
     llm_handoff: bool,
+    bot_reply: str = "",
 ) -> tuple[bool, str]:
     if not tenant.handoff.enabled:
         return False, ""
@@ -94,7 +109,7 @@ def resolve_handoff(
     if matches_handoff_keywords(inbound_text, tenant):
         return True, "keyword"
 
-    if is_general_assistant_question(inbound_text):
+    if is_general_assistant_question(inbound_text) or is_informational_question(inbound_text):
         return False, ""
 
     if llm_handoff and is_commercial_question(inbound_text):
@@ -105,6 +120,9 @@ def resolve_handoff(
         retrieved_knowledge=retrieved_knowledge,
         tenant=tenant,
     ):
+        # Se o bot já respondeu com conteúdo, não faz handoff no mesmo turno.
+        if bot_reply.strip():
+            return False, ""
         return True, "no_knowledge"
 
     return False, ""

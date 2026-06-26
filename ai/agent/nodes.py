@@ -125,11 +125,13 @@ def run_agent(state: HarnessState) -> HarnessState:
         }
 
     llm_handoff = bool(result.get("handoff_to_human", False))
+    reply = str(result.get("reply") or "")
     handoff, reason = resolve_handoff(
         inbound_text=text,
         retrieved_knowledge=state.get("retrieved_knowledge", []),
         tenant=tenant,
         llm_handoff=llm_handoff,
+        bot_reply=reply,
     )
 
     return {
