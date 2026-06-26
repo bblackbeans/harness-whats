@@ -157,6 +157,24 @@ Se a conversa já estiver `resolved` e o cliente mandar mensagem antes do webhoo
 
 ---
 
+### Por que o bot parou de responder?
+
+Depois de um **handoff** (passagem para humano), a conversa fica com status `open` e o bot
+ignora novas mensagens até você clicar **Resolver** (que devolve ao bot na mesma thread).
+
+A mensagem *"Conversa foi reaberta por harness-whats"* é o retorno automático ao bot
+(`resolved` → `pending`) — comportamento esperado.
+
+### Quando o bot faz handoff?
+
+Somente para:
+- Pedido explícito de atendente/humano
+- Perguntas **comerciais** (preço, orçamento, prazo, contrato) sem resposta no FAQ
+
+**Não** faz handoff para perguntas gerais (data, hora, cumprimentos, contato básico no FAQ).
+
+---
+
 ## Como testar
 
 1. No Telegram: *"Quero falar com um atendente"*

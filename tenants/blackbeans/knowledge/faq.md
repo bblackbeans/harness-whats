@@ -21,7 +21,10 @@ Para orçamentos e propostas comerciais, um consultor humano da BlackBeans entra
 
 ## Contato e atendimento
 
-Este assistente responde dúvidas gerais sobre a BlackBeans e seus serviços. Para assuntos comerciais específicos, solicite que um consultor assuma a conversa.
+- Site: https://blackbeans.com.br
+- E-mail: contato@blackbeans.com.br
+- Este assistente responde dúvidas gerais sobre a BlackBeans e seus serviços.
+- Para orçamentos e propostas comerciais detalhadas, um consultor humano pode assumir se o cliente solicitar.
 
 ## Horário
 
