@@ -75,6 +75,7 @@ def _parse_tenant_dir(tenant_dir: Path) -> TenantConfig | None:
             on_no_knowledge=bool(handoff_raw.get("on_no_knowledge", True)),
             private_note_enabled=bool(handoff_raw.get("private_note_enabled", True)),
             auto_resume_on_resolved=bool(handoff_raw.get("auto_resume_on_resolved", True)),
+            resume_bot_on_resolve=bool(handoff_raw.get("resume_bot_on_resolve", True)),
         ),
         root_dir=str(tenant_dir),
     )

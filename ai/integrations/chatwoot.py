@@ -59,6 +59,11 @@ def _conversation_id(payload: dict) -> int | None:
     conversation = payload.get("conversation")
     if isinstance(conversation, dict) and conversation.get("id") is not None:
         return int(conversation["id"])
+
+    event = str(payload.get("event", "")).lower()
+    if event.startswith("conversation") and payload.get("id") is not None:
+        return int(payload["id"])
+
     return None
 
 
@@ -97,6 +102,9 @@ def _inbox_id(payload: dict) -> int | None:
     if conversation.get("inbox_id") is not None:
         return int(conversation["inbox_id"])
 
+    if payload.get("inbox_id") is not None:
+        return int(payload["inbox_id"])
+
     inbox = payload.get("inbox")
     if isinstance(inbox, dict) and inbox.get("id") is not None:
         return int(inbox["id"])
@@ -106,7 +114,8 @@ def _inbox_id(payload: dict) -> int | None:
 
 def _conversation_status(payload: dict) -> str:
     conversation = payload.get("conversation") or {}
-    return str(conversation.get("status", "")).lower()
+    status = conversation.get("status", payload.get("status", ""))
+    return str(status).lower()
 
 
 def conversation_status(payload: dict) -> str:
@@ -144,9 +153,35 @@ def webhook_conversation_id(payload: dict) -> int | None:
     return _conversation_id(payload)
 
 
+def webhook_account_id(payload: dict) -> int | None:
+    return _account_id(payload)
+
+
+def webhook_inbox_id(payload: dict) -> int | None:
+    return _inbox_id(payload)
+
+
 def webhook_message_id(payload: dict) -> str:
     message = payload.get("message") or {}
     return str(payload.get("id") or message.get("id") or "")
+
+
+def is_conversation_status_webhook(payload: dict) -> bool:
+    event = str(payload.get("event", "")).lower()
+    return event in {"conversation_resolved", "conversation_status_changed"}
+
+
+def should_resume_bot_on_resolve(payload: dict) -> bool:
+    event = str(payload.get("event", "")).lower()
+    status = _conversation_status(payload)
+
+    if event == "conversation_resolved":
+        return True
+
+    if event == "conversation_status_changed" and status == "resolved":
+        return True
+
+    return False
 
 
 def extract_inbound_message(payload: dict) -> dict | None:

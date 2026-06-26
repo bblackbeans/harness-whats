@@ -25,6 +25,6 @@
     "keywords": ["atendente", "humano", "pessoa", "consultor"],
     "on_no_knowledge": true,
     "private_note_enabled": true,
-    "auto_resume_on_resolved": true
+    "resume_bot_on_resolve": true
   }
 }

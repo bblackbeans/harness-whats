@@ -17,6 +17,7 @@ class Lifecycle:
     PROCESSING = "processing"
     REPLIED = "replied"
     HANDED_OFF = "handed_off"
+    BOT_RESUMED = "bot_resumed"
     IGNORED = "ignored"
     FAILED = "failed"
     DUPLICATE = "duplicate"

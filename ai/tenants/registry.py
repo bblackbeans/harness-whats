@@ -34,7 +34,11 @@ def get_tenant(tenant_id: str) -> TenantConfig:
     return load_default_tenant()
 
 
-def resolve_tenant(event: InboundEvent) -> TenantConfig:
+def resolve_tenant_by_routing(
+    *,
+    account_id: int,
+    inbox_id: int | None = None,
+) -> TenantConfig:
     forced = os.getenv("TENANT_ID", "").strip()
     if forced:
         return get_tenant(forced)
@@ -43,15 +47,20 @@ def resolve_tenant(event: InboundEvent) -> TenantConfig:
     if len(tenants) == 1:
         return tenants[0]
 
-    inbox_id = event.inbox_id
     if inbox_id is not None:
         for tenant in tenants:
             if inbox_id in tenant.routing.chatwoot_inbox_ids:
                 return tenant
 
-    account_id = event.account_id
     for tenant in tenants:
         if account_id in tenant.routing.chatwoot_account_ids:
             return tenant
 
     return load_default_tenant()
+
+
+def resolve_tenant(event: InboundEvent) -> TenantConfig:
+    return resolve_tenant_by_routing(
+        account_id=event.account_id,
+        inbox_id=event.inbox_id,
+    )

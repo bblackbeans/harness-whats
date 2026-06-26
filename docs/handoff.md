@@ -121,49 +121,39 @@ Arquivos principais:
 
 ---
 
-## Como devolver ao bot (mesma conversa)
+## Como devolver ao bot (pelo Chatwoot)
 
-### O problema do botão "Resolver"
+### Fluxo automático — clique em **Resolver**
 
-No Chatwoot com Agent Bot, **não use "Resolver"** para voltar o cliente ao bot.
-
-| Ação | O que acontece |
-|---|---|
-| Humano responde no painel | Status vira `open` → bot para |
-| Clica **Resolver** | Conversa fecha (`resolved`) |
-| Cliente manda mensagem nova | Chatwoot pode criar **outra conversa** (ID diferente) |
-| Você vê uma thread, o bot atende outra | Mensagens somem do painel |
-
-### Forma correta: devolver ao bot (`pending`)
-
-Enquanto a conversa ainda está **aberta** (`open`), devolva ao bot **sem resolver**:
-
-```
-POST /ops/resume-bot?conversation_id=ID&account_id=2
-```
-
-Ou no Chatwoot (API): `toggle_status` → `{ "status": "pending" }`
-
-Isso mantém a **mesma conversa** e o bot volta a responder.
-
-### Se já clicou em Resolver
-
-Com `auto_resume_on_resolved: true` (padrão no `tenant.json`), quando o cliente
-manda mensagem numa conversa `resolved`, o harness tenta reativar o bot na **mesma thread**
-antes de responder.
-
-Se o Chatwoot já tiver criado uma conversa nova, use `/ops/resume-bot` na conversa
-que está com status `open` e peça ao cliente para continuar nela — ou resolva as
-conversas duplicadas manualmente.
-
-### Fluxo recomendado
+Quando o agente clica **Resolver** no Chatwoot, o harness recebe o webhook
+`conversation_resolved` / `conversation_status_changed` e **devolve a conversa ao bot**
+na mesma thread (`resolved` → `pending`).
 
 ```
 1. Bot atende (pending)
-2. Humano assume (open) — bot para
-3. Humano termina → POST /ops/resume-bot (pending)   ← NÃO clique Resolver
+2. Humano responde no painel (open) → bot para
+3. Humano clica Resolver → harness reativa o bot automaticamente
 4. Cliente manda mensagem → mesma conversa, bot responde
 ```
+
+Config em `tenant.json`:
+
+```json
+"handoff": {
+  "resume_bot_on_resolve": true
+}
+```
+
+Não é necessário curl nem endpoint manual — basta usar o Chatwoot normalmente.
+
+### Fallback (cliente escreve antes do Resolver)
+
+Se a conversa já estiver `resolved` e o cliente mandar mensagem antes do webhook,
+`auto_resume_on_resolved: true` reativa o bot na mesma conversa ao processar a mensagem.
+
+### Endpoint ops (opcional)
+
+`POST /ops/resume-bot?conversation_id=ID` existe apenas para suporte/debug.
 
 ---
 

@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, model_validator
 
 from agent.nodes import generate_dispatch_message
+from handoff.resume import handle_conversation_status_webhook
 from ingress.dedupe import is_duplicate
 from ingress.models import InboundEvent
 from ingress.processor import process_inbound
@@ -17,6 +18,7 @@ from integrations.chatwoot import (
     extract_inbound_message,
     ignore_reason,
     is_configured,
+    is_conversation_status_webhook,
     send_message,
     send_template,
     verify_webhook_signature,
@@ -155,6 +157,21 @@ async def chatwoot_webhook(request: Request, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=401, detail="Assinatura do webhook inválida")
 
     payload = json.loads(body)
+    event_name = str(payload.get("event", "")).lower()
+
+    if is_conversation_status_webhook(payload):
+        if is_duplicate(delivery_id or f"{event_name}:{webhook_conversation_id(payload) or 0}"):
+            return {"duplicate": True}
+        background_tasks.add_task(_safe_handle_conversation_status, payload, delivery_id)
+        return JSONResponse(
+            status_code=202,
+            content={
+                "accepted": True,
+                "event": event_name,
+                "conversation_id": webhook_conversation_id(payload),
+            },
+        )
+
     inbound = extract_inbound_message(payload)
 
     if not inbound:
@@ -202,6 +219,13 @@ async def chatwoot_webhook(request: Request, background_tasks: BackgroundTasks):
             "delivery_id": delivery_id or None,
         },
     )
+
+
+async def _safe_handle_conversation_status(payload: dict, delivery_id: str) -> None:
+    try:
+        await handle_conversation_status_webhook(payload, delivery_id)
+    except Exception:
+        logger.exception("Falha ao processar evento de status da conversa")
 
 
 async def _safe_process(event: InboundEvent) -> None:
