@@ -1,6 +1,10 @@
+import logging
+
 from harness.state import HarnessState
-from integrations.chatwoot import add_conversation_label, send_private_note
+from integrations.chatwoot import add_conversation_label, send_message, send_private_note
 from tenants import get_tenant
+
+logger = logging.getLogger(__name__)
 
 
 def _build_private_note(state: HarnessState, reason: str) -> str:
@@ -24,15 +28,38 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
     conversation_id = state["conversation_id"]
     bot_token = tenant.routing.chatwoot_bot_token
     label = (tenant.handoff.handoff_label or "Atendimento Humano").strip()
+    handoff_msg = (tenant.handoff.message or "").strip()
+    message_sent = False
+
+    if handoff_msg:
+        msg_result = await send_message(
+            account_id, conversation_id, handoff_msg, bot_token=bot_token
+        )
+        if msg_result.get("ok"):
+            message_sent = True
+        else:
+            logger.error(
+                "Falha ao enviar mensagem de handoff conv=%s: %s",
+                conversation_id,
+                msg_result.get("error"),
+            )
 
     result = await add_conversation_label(
         account_id, conversation_id, label, bot_token=bot_token
     )
     if not result.get("ok"):
+        error = str(result.get("error", ""))
+        logger.error("Falha ao aplicar etiqueta de handoff conv=%s: %s", conversation_id, error)
+        hint = (
+            "Crie a etiqueta no Chatwoot (Configurações → Etiquetas) "
+            f"com o nome exato «{label}», ou configure CHATWOOT_ADMIN_TOKEN no servidor."
+        )
         return {
             **state,
+            "should_reply": False,
+            "outbound_text": handoff_msg if message_sent else "",
             "lifecycle_status": "handoff_failed",
-            "handoff_reason": f"{state.get('handoff_reason', '')}: {result.get('error', '')}",
+            "handoff_reason": f"{state.get('handoff_reason', '')}: {error}. {hint}",
         }
 
     if tenant.handoff.private_note_enabled:
@@ -42,6 +69,6 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
     return {
         **state,
         "should_reply": False,
-        "outbound_text": "",
+        "outbound_text": handoff_msg if message_sent else "",
         "lifecycle_status": "handed_off",
     }

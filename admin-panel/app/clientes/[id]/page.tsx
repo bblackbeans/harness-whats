@@ -238,7 +238,7 @@ export default function ClienteDetailPage() {
             <div>
               <FieldLabel
                 label="Etiqueta de handoff (Chatwoot)"
-                help="Quando precisar de humano, o bot para de responder e aplica esta etiqueta na conversa. O Harness cria a etiqueta no Chatwoot automaticamente, se ainda não existir."
+                help="Quando precisar de humano, o bot envia a mensagem de transferência, para de responder e aplica esta etiqueta. Crie «Atendimento Humano» em Chatwoot → Configurações → Etiquetas (uma vez por conta), ou configure CHATWOOT_ADMIN_TOKEN no servidor para criar automaticamente."
               />
               <input
                 className="input-field font-mono text-sm"

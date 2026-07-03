@@ -68,7 +68,10 @@ async def process_inbound(event: InboundEvent) -> dict:
             lifecycle = result.get("lifecycle_status", "")
             if lifecycle == "handed_off":
                 status = Lifecycle.HANDED_OFF
-                detail = result.get("handoff_reason") or "handed_off"
+                detail = result.get("outbound_text") or result.get("handoff_reason") or "handed_off"
+            elif lifecycle == "handoff_failed":
+                status = Lifecycle.FAILED
+                detail = result.get("handoff_reason") or "handoff_failed"
             elif lifecycle == "send_failed":
                 status = Lifecycle.FAILED
                 detail = result.get("handoff_reason") or "send_failed"

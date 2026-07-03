@@ -16,6 +16,15 @@ def _headers(bot_token: str | None = None) -> dict[str, str]:
     return {"api_access_token": token, "Content-Type": "application/json"}
 
 
+def _admin_token() -> str:
+    return os.getenv("CHATWOOT_ADMIN_TOKEN", "").strip()
+
+
+def _token_for_account_labels(bot_token: str | None = None) -> str:
+    """Token de usuário admin — bot não pode criar/listar etiquetas da conta."""
+    return _admin_token() or (bot_token or "").strip() or CHATWOOT_BOT_TOKEN
+
+
 def _is_token_configured(bot_token: str | None = None) -> bool:
     return bool(CHATWOOT_BASE_URL and ((bot_token or "").strip() or CHATWOOT_BOT_TOKEN))
 
@@ -242,12 +251,13 @@ async def send_private_note(
 
 
 async def list_account_labels(account_id: int, *, bot_token: str | None = None) -> dict:
-    if not _is_token_configured(bot_token):
-        return {"ok": False, "error": "Token do robô Chatwoot não configurado para este cliente"}
+    token = _token_for_account_labels(bot_token)
+    if not CHATWOOT_BASE_URL or not token:
+        return {"ok": False, "error": "Token admin Chatwoot não configurado"}
 
     url = f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}/labels"
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(url, headers=_headers(bot_token))
+        response = await client.get(url, headers=_headers(token))
         if response.status_code >= 400:
             return {"ok": False, "error": response.text, "status": response.status_code}
         data = response.json()
@@ -259,12 +269,20 @@ async def list_account_labels(account_id: int, *, bot_token: str | None = None) 
 async def ensure_account_label(
     account_id: int, label: str, *, bot_token: str | None = None
 ) -> dict:
-    """Garante que a etiqueta existe na conta antes de aplicar na conversa."""
+    """Garante que a etiqueta existe na conta (requer token de usuário admin)."""
     title = (label or "").strip()
     if not title:
         return {"ok": True, "skipped": True}
 
-    existing = await list_account_labels(account_id, bot_token=bot_token)
+    token = _admin_token() or (bot_token or "").strip()
+    if not _admin_token():
+        # Bot não tem permissão para /accounts/{id}/labels — pular criação automática.
+        return {"ok": True, "skipped": True, "reason": "no_admin_token"}
+
+    if not CHATWOOT_BASE_URL or not token:
+        return {"ok": False, "error": "CHATWOOT_ADMIN_TOKEN não configurado no servidor"}
+
+    existing = await list_account_labels(account_id, bot_token=token)
     if not existing.get("ok"):
         return existing
     if title.lower() in existing.get("titles", []):
@@ -273,7 +291,7 @@ async def ensure_account_label(
     url = f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}/labels"
     payload = {"title": title, "show_on_sidebar": True}
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(url, json=payload, headers=_headers(bot_token))
+        response = await client.post(url, json=payload, headers=_headers(token))
         if response.status_code >= 400:
             return {"ok": False, "error": response.text, "status": response.status_code}
         return {"ok": True, "created": True, "data": response.json()}
