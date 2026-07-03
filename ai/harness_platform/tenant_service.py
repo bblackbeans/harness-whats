@@ -68,11 +68,14 @@ def _merge_settings(current_raw: dict | None, incoming: TenantSettings) -> dict[
 
     incoming_routing = payload.pop("routing", None)
     if incoming_routing is not None:
+        raw_routing = dict((current_raw or {}).get("routing") or {})
+        preserved_encrypted = raw_routing.get("encrypted_chatwoot_bot_token")
         current_routing = dict(merged.get("routing") or {})
-        preserved_encrypted = current_routing.get("encrypted_chatwoot_bot_token")
         new_token = incoming_routing.pop("chatwoot_bot_token", None)
         current_routing.update(incoming_routing)
         current_routing.pop("chatwoot_bot_token", None)
+        current_routing.pop("chatwoot_bot_token_set", None)
+        current_routing.pop("chatwoot_bot_token_preview", None)
         if new_token is not None:
             if str(new_token).strip():
                 current_routing["encrypted_chatwoot_bot_token"] = encrypt_value(str(new_token).strip())

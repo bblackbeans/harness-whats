@@ -273,8 +273,13 @@ async def resume_bot_conversation(
 async def send_message(
     account_id: int, conversation_id: int, content: str, *, bot_token: str | None = None
 ) -> dict:
+    if not CHATWOOT_BASE_URL:
+        return {"ok": False, "error": "CHATWOOT_BASE_URL não configurado no servidor"}
     if not _is_token_configured(bot_token):
-        return {"ok": False, "error": "Chatwoot não configurado"}
+        return {
+            "ok": False,
+            "error": "Token do robô Chatwoot não configurado para este cliente",
+        }
 
     url = (
         f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}"
