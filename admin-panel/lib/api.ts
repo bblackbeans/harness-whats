@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
+import { getApiBase } from "./api-base";
+
+const API_BASE = getApiBase();
 
 export type Tenant = {
   id: string;
