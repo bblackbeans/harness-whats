@@ -107,7 +107,12 @@ async def _resume_same_conversation(
     conversation_id: int,
     source: str,
 ) -> dict:
-    result = await resume_bot_conversation(account_id, conversation_id)
+    tenant = get_tenant(tenant_id)
+    result = await resume_bot_conversation(
+        account_id,
+        conversation_id,
+        bot_token=tenant.routing.chatwoot_bot_token,
+    )
     if result.get("ok"):
         logger.info(
             "Bot reativado tenant=%s conversa=%s origem=%s",

@@ -15,6 +15,7 @@ class ModelConfig:
 class RoutingConfig:
     chatwoot_account_ids: list[int] = field(default_factory=list)
     chatwoot_inbox_ids: list[int] = field(default_factory=list)
+    chatwoot_bot_token: str = ""
 
 
 @dataclass(frozen=True)

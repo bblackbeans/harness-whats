@@ -1,11 +1,15 @@
 from sqlalchemy.orm import Session
 
-from harness_platform.crypto import encrypt_value
+from harness_platform.crypto import encrypt_value, mask_secret
 from harness_platform.models import LlmModel, LlmProvider, TenantAllowedModel
 
 
 def list_providers(db: Session) -> list[LlmProvider]:
     return db.query(LlmProvider).order_by(LlmProvider.name).all()
+
+
+def provider_api_key_preview(provider: LlmProvider) -> str:
+    return mask_secret(provider.encrypted_api_key or "")
 
 
 def create_provider(db: Session, *, name: str, provider_type: str, api_key: str) -> LlmProvider:

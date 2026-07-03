@@ -25,13 +25,14 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
     conversation_id = state["conversation_id"]
     handoff_message = tenant.handoff.message.strip()
     outbound = state.get("outbound_text", "").strip()
+    bot_token = tenant.routing.chatwoot_bot_token
 
     if handoff_message and outbound != handoff_message:
         if not state.get("should_reply") or not outbound:
-            await send_message(account_id, conversation_id, handoff_message)
+            await send_message(account_id, conversation_id, handoff_message, bot_token=bot_token)
             state = {**state, "outbound_text": handoff_message, "should_reply": True}
 
-    result = await handoff_conversation(account_id, conversation_id)
+    result = await handoff_conversation(account_id, conversation_id, bot_token=bot_token)
     if not result.get("ok"):
         return {
             **state,
@@ -41,6 +42,6 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
 
     if tenant.handoff.private_note_enabled:
         note = _build_private_note(state, state.get("handoff_reason", "unknown"))
-        await send_private_note(account_id, conversation_id, note)
+        await send_private_note(account_id, conversation_id, note, bot_token=bot_token)
 
     return {**state, "lifecycle_status": "handed_off"}

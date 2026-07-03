@@ -20,6 +20,7 @@ export default function NovoClientePage() {
   const [language, setLanguage] = useState("pt-BR");
   const [inboxIds, setInboxIds] = useState("");
   const [accountIds, setAccountIds] = useState("");
+  const [chatwootBotToken, setChatwootBotToken] = useState("");
   const [modelName, setModelName] = useState("gpt-4o-mini");
   const [temperature, setTemperature] = useState("0.3");
   const [portalEmail, setPortalEmail] = useState("");
@@ -61,6 +62,7 @@ export default function NovoClientePage() {
           routing: {
             chatwoot_inbox_ids: parseIds(inboxIds),
             chatwoot_account_ids: parseIds(accountIds),
+            ...(chatwootBotToken.trim() ? { chatwoot_bot_token: chatwootBotToken.trim() } : {}),
           },
           model: { name: modelName, temperature: parseFloat(temperature) },
         },
@@ -152,6 +154,22 @@ export default function NovoClientePage() {
                 onChange={(e) => setAccountIds(e.target.value)}
                 placeholder="1"
               />
+            </div>
+            <div>
+              <FieldLabel
+                label="Token de acesso do robô"
+                help="Token do Agent Bot no Chatwoot deste cliente. Cada cliente deve ter seu próprio robô e token."
+              />
+              <input
+                className="input-field font-mono text-sm"
+                type="password"
+                value={chatwootBotToken}
+                onChange={(e) => setChatwootBotToken(e.target.value)}
+                placeholder="Cole o token do Agent Bot"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Encontre em Chatwoot → Configurações → Agent Bots → copiar access token.
+              </p>
             </div>
           </>
         )}

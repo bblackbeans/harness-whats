@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 class RoutingSettings(BaseModel):
     chatwoot_account_ids: list[int] = Field(default_factory=list)
     chatwoot_inbox_ids: list[int] = Field(default_factory=list)
+    chatwoot_bot_token: str | None = None
 
 
 class ModelSettings(BaseModel):

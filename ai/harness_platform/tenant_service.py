@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from harness_platform.cache import invalidate_tenant_cache
+from harness_platform.crypto import decrypt_value, encrypt_value, mask_secret
 from harness_platform.models import Tenant, TenantPrompt
 from harness_platform.schemas import TenantCreate, TenantSettings, TenantUpdate
 from tenants.config import (
@@ -24,7 +25,69 @@ def _default_prompts() -> dict[str, str]:
 
 
 def _settings_to_dict(settings: TenantSettings) -> dict[str, Any]:
-    return settings.model_dump()
+    data = settings.model_dump()
+    routing = dict(data.get("routing") or {})
+    token = routing.pop("chatwoot_bot_token", None)
+    if token and str(token).strip():
+        routing["encrypted_chatwoot_bot_token"] = encrypt_value(str(token).strip())
+    data["routing"] = routing
+    return data
+
+
+def _public_routing(routing: dict | None) -> dict[str, Any]:
+    routing = dict(routing or {})
+    encrypted = routing.pop("encrypted_chatwoot_bot_token", None)
+    routing.pop("chatwoot_bot_token", None)
+    routing["chatwoot_bot_token_set"] = bool(encrypted)
+    routing["chatwoot_bot_token_preview"] = mask_secret(encrypted or "")
+    return routing
+
+
+def _public_settings(raw: dict | None) -> dict[str, Any]:
+    if not raw:
+        return {}
+    result = dict(raw)
+    result["routing"] = _public_routing(result.get("routing"))
+    return result
+
+
+def _routing_bot_token(routing: dict | None) -> str:
+    encrypted = (routing or {}).get("encrypted_chatwoot_bot_token") or ""
+    if not encrypted:
+        return ""
+    try:
+        return decrypt_value(encrypted)
+    except Exception:
+        return ""
+
+
+def _merge_settings(current_raw: dict | None, incoming: TenantSettings) -> dict[str, Any]:
+    current = _parse_settings(current_raw)
+    merged = current.model_dump()
+    payload = incoming.model_dump(exclude_unset=True)
+
+    incoming_routing = payload.pop("routing", None)
+    if incoming_routing is not None:
+        current_routing = dict(merged.get("routing") or {})
+        preserved_encrypted = current_routing.get("encrypted_chatwoot_bot_token")
+        new_token = incoming_routing.pop("chatwoot_bot_token", None)
+        current_routing.update(incoming_routing)
+        current_routing.pop("chatwoot_bot_token", None)
+        if new_token is not None:
+            if str(new_token).strip():
+                current_routing["encrypted_chatwoot_bot_token"] = encrypt_value(str(new_token).strip())
+            else:
+                current_routing.pop("encrypted_chatwoot_bot_token", None)
+        elif preserved_encrypted:
+            current_routing["encrypted_chatwoot_bot_token"] = preserved_encrypted
+        merged["routing"] = current_routing
+
+    for key, value in payload.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = {**merged[key], **value}
+        else:
+            merged[key] = value
+    return merged
 
 
 def _parse_settings(raw: dict | None) -> TenantSettings:
@@ -42,7 +105,7 @@ def tenant_to_response(tenant: Tenant) -> dict[str, Any]:
         "name": tenant.name,
         "language": tenant.language,
         "active": tenant.active,
-        "settings": tenant.settings or {},
+        "settings": _public_settings(tenant.settings),
         "prompts": prompts,
     }
 
@@ -62,6 +125,7 @@ def tenant_to_config(tenant: Tenant) -> TenantConfig:
         routing=RoutingConfig(
             chatwoot_account_ids=settings.routing.chatwoot_account_ids,
             chatwoot_inbox_ids=settings.routing.chatwoot_inbox_ids,
+            chatwoot_bot_token=_routing_bot_token((tenant.settings or {}).get("routing")),
         ),
         context=ContextConfig(
             summarize_after=settings.context.summarize_after,
@@ -137,15 +201,7 @@ def update_tenant(db: Session, tenant_id: str, payload: TenantUpdate) -> Tenant:
     if payload.active is not None:
         tenant.active = payload.active
     if payload.settings is not None:
-        current = _parse_settings(tenant.settings)
-        merged = current.model_dump()
-        incoming = payload.settings.model_dump(exclude_unset=True)
-        for key, value in incoming.items():
-            if isinstance(value, dict) and isinstance(merged.get(key), dict):
-                merged[key] = {**merged[key], **value}
-            else:
-                merged[key] = value
-        tenant.settings = merged
+        tenant.settings = _merge_settings(tenant.settings, payload.settings)
 
     if payload.prompts:
         existing = {p.name: p for p in tenant.prompts}

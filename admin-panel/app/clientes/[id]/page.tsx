@@ -48,6 +48,9 @@ export default function ClienteDetailPage() {
 
   const [name, setName] = useState("");
   const [inboxIds, setInboxIds] = useState("");
+  const [accountIds, setAccountIds] = useState("");
+  const [chatwootBotToken, setChatwootBotToken] = useState("");
+  const [chatwootBotTokenPreview, setChatwootBotTokenPreview] = useState("");
   const [llmModelId, setLlmModelId] = useState<number | "">("");
   const [prompts, setPrompts] = useState<Record<string, string>>({});
 
@@ -66,6 +69,9 @@ export default function ClienteDetailPage() {
         setCliente(t);
         setName(t.name);
         setInboxIds((t.settings?.routing?.chatwoot_inbox_ids || []).join(", "));
+        setAccountIds((t.settings?.routing?.chatwoot_account_ids || []).join(", "));
+        setChatwootBotToken("");
+        setChatwootBotTokenPreview(t.settings?.routing?.chatwoot_bot_token_preview || "");
         setLlmModelId(t.settings?.model?.llm_model_id ?? "");
         setPrompts(t.prompts || {});
         setKnowledge(k.files || []);
@@ -86,7 +92,11 @@ export default function ClienteDetailPage() {
       const updated = await updateTenant(clienteId, {
         name,
         settings: {
-          routing: { chatwoot_inbox_ids: parseIds(inboxIds) },
+          routing: {
+            chatwoot_inbox_ids: parseIds(inboxIds),
+            chatwoot_account_ids: parseIds(accountIds),
+            ...(chatwootBotToken.trim() ? { chatwoot_bot_token: chatwootBotToken.trim() } : {}),
+          },
           model: {
             llm_model_id: llmModelId === "" ? null : Number(llmModelId),
             name: selected?.model_id || cliente?.settings?.model?.name,
@@ -95,6 +105,8 @@ export default function ClienteDetailPage() {
         prompts,
       });
       setCliente(updated);
+      setChatwootBotToken("");
+      setChatwootBotTokenPreview(updated.settings?.routing?.chatwoot_bot_token_preview || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar");
     } finally {
@@ -191,6 +203,32 @@ export default function ClienteDetailPage() {
             <div>
               <FieldLabel label="Inbox IDs (Chatwoot)" help="IDs das caixas de entrada que roteiam mensagens para este cliente." />
               <input className="input-field" value={inboxIds} onChange={(e) => setInboxIds(e.target.value)} />
+            </div>
+            <div>
+              <FieldLabel label="Account IDs (Chatwoot)" help="IDs das contas Chatwoot deste cliente. Separe por vírgula." />
+              <input className="input-field" value={accountIds} onChange={(e) => setAccountIds(e.target.value)} placeholder="2, 3" />
+            </div>
+            <div>
+              <FieldLabel
+                label="Token de acesso do robô (Chatwoot)"
+                help="Token do Agent Bot no Chatwoot para este cliente enviar mensagens. Encontre em Configurações → Agent Bots."
+              />
+              {chatwootBotTokenPreview ? (
+                <p className="mb-2 font-mono text-xs text-gray-500">
+                  Token atual: {chatwootBotTokenPreview}
+                </p>
+              ) : (
+                <p className="mb-2 text-xs text-amber-600">
+                  Nenhum token configurado — usa o fallback da variável CHATWOOT_BOT_TOKEN no servidor.
+                </p>
+              )}
+              <input
+                className="input-field font-mono text-sm"
+                type="password"
+                value={chatwootBotToken}
+                onChange={(e) => setChatwootBotToken(e.target.value)}
+                placeholder="Cole o novo token para substituir (deixe vazio para manter)"
+              />
             </div>
             <div>
               <FieldLabel

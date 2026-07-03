@@ -49,6 +49,7 @@ from harness_platform.llm_service import (
     get_tenant_allowed_models,
     list_models,
     list_providers,
+    provider_api_key_preview,
     set_tenant_models,
     update_model,
     update_provider,
@@ -231,7 +232,13 @@ def put_prompt(
 def llm_providers(db: Session = Depends(get_db), _: AdminUser = Depends(get_current_admin)):
     providers = list_providers(db)
     return [
-        {"id": p.id, "name": p.name, "provider_type": p.provider_type, "active": p.active}
+        {
+            "id": p.id,
+            "name": p.name,
+            "provider_type": p.provider_type,
+            "active": p.active,
+            "api_key_preview": provider_api_key_preview(p),
+        }
         for p in providers
     ]
 

@@ -48,6 +48,7 @@ def _parse_tenant_dir(tenant_dir: Path) -> TenantConfig | None:
                 int(value) for value in routing_raw.get("chatwoot_account_ids", [])
             ],
             chatwoot_inbox_ids=[int(value) for value in routing_raw.get("chatwoot_inbox_ids", [])],
+            chatwoot_bot_token=str(routing_raw.get("chatwoot_bot_token") or ""),
         ),
         context=ContextConfig(
             summarize_after=int(context_raw.get("summarize_after", 12)),

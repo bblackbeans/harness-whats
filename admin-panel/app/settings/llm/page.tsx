@@ -13,7 +13,7 @@ import {
   updateLlmProvider,
 } from "@/lib/api";
 
-type Provider = { id: number; name: string; provider_type: string; active: boolean };
+type Provider = { id: number; name: string; provider_type: string; active: boolean; api_key_preview: string };
 type Model = {
   id: number;
   provider_id: number;
@@ -37,6 +37,7 @@ export default function LlmSettingsPage() {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [editProviderName, setEditProviderName] = useState("");
   const [editProviderKey, setEditProviderKey] = useState("");
+  const [editProviderKeyPreview, setEditProviderKeyPreview] = useState("");
   const [editProviderActive, setEditProviderActive] = useState(true);
 
   const [editingModel, setEditingModel] = useState<Model | null>(null);
@@ -212,6 +213,7 @@ export default function LlmSettingsPage() {
                       setEditingProvider(p);
                       setEditProviderName(p.name);
                       setEditProviderKey("");
+                      setEditProviderKeyPreview(p.api_key_preview || "");
                       setEditProviderActive(p.active);
                     }}
                   >
@@ -280,6 +282,14 @@ export default function LlmSettingsPage() {
             <div>
               <FieldLabel label="Nome" help="Nome exibido no painel." />
               <input className="input-field" value={editProviderName} onChange={(e) => setEditProviderName(e.target.value)} />
+            </div>
+            <div>
+              <FieldLabel label="API Key atual" help="Chave configurada no provedor (parcialmente mascarada por segurança)." />
+              <input
+                className="input-field bg-gray-50 font-mono text-sm"
+                value={editProviderKeyPreview || "Nenhuma chave cadastrada"}
+                readOnly
+              />
             </div>
             <div>
               <FieldLabel label="Nova API Key" help="Deixe em branco para manter a chave atual." />

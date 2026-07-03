@@ -279,6 +279,9 @@ async def dispatch_messages(body: DispatchRequest):
         raise HTTPException(status_code=400, detail=str(error)) from error
 
     results: list[DispatchResult] = []
+    bot_token = ""
+    if body.tenant_id:
+        bot_token = get_tenant(body.tenant_id).routing.chatwoot_bot_token
 
     for contact in body.contacts:
         try:
@@ -290,6 +293,7 @@ async def dispatch_messages(body: DispatchRequest):
                     language=body.language,
                     processed_params=contact.processed_params or contact.variables,
                     content=body.message,
+                    bot_token=bot_token or None,
                 )
             else:
                 text = generate_dispatch_message(
@@ -297,7 +301,12 @@ async def dispatch_messages(body: DispatchRequest):
                     contact.variables,
                     tenant_id=body.tenant_id,
                 )
-                response = await send_message(account_id, contact.conversation_id, text)
+                response = await send_message(
+                    account_id,
+                    contact.conversation_id,
+                    text,
+                    bot_token=bot_token or None,
+                )
 
             ok = bool(response.get("ok"))
             results.append(

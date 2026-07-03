@@ -8,7 +8,12 @@ export type Tenant = {
   language: string;
   active: boolean;
   settings: {
-    routing?: { chatwoot_account_ids?: number[]; chatwoot_inbox_ids?: number[] };
+    routing?: {
+      chatwoot_account_ids?: number[];
+      chatwoot_inbox_ids?: number[];
+      chatwoot_bot_token_set?: boolean;
+      chatwoot_bot_token_preview?: string;
+    };
     model?: { name?: string; temperature?: number; llm_model_id?: number | null };
     context?: Record<string, number>;
     rag?: Record<string, unknown>;
@@ -250,7 +255,9 @@ export async function updateLlmModel(
 }
 
 export async function listLlmProviders() {
-  return request<Array<{ id: number; name: string; provider_type: string; active: boolean }>>("/admin/api/llm/providers");
+  return request<
+    Array<{ id: number; name: string; provider_type: string; active: boolean; api_key_preview: string }>
+  >("/admin/api/llm/providers");
 }
 
 export async function listTenantUsers(tenantId: string) {
