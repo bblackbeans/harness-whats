@@ -15,6 +15,7 @@ from portal.routes import router as portal_router
 from harness_platform.db import SessionLocal
 
 from agent.nodes import generate_dispatch_message
+from handoff.constants import HANDOFF_LABEL
 from handoff.resume import handle_conversation_status_webhook
 from ingress.dedupe import is_duplicate
 from ingress.models import InboundEvent
@@ -213,12 +214,11 @@ async def chatwoot_webhook(request: Request, background_tasks: BackgroundTasks):
     inbound = None
     account_id = webhook_account_id(payload)
     inbox_id = webhook_inbox_id(payload)
-    handoff_label = None
+    handoff_label = HANDOFF_LABEL
     tenant_id = ""
     if account_id is not None:
         tenant = resolve_tenant_by_routing(account_id=account_id, inbox_id=inbox_id)
         tenant_id = tenant.id
-        handoff_label = tenant.handoff.handoff_label
 
     inbound = extract_inbound_message(payload, handoff_label=handoff_label)
 

@@ -238,12 +238,13 @@ export default function ClienteDetailPage() {
                 </li>
                 <li>
                   A conversa recebe a etiqueta fixa{" "}
-                  <strong className="text-gray-800">Atendimento Humano</strong> no Chatwoot.
+                  <strong className="text-gray-800">humano</strong> no Chatwoot (sem espaço no nome).
                 </li>
                 <li>
                   Crie essa etiqueta em{" "}
                   <strong className="text-gray-800">Chatwoot → Configurações → Etiquetas</strong>{" "}
-                  ao montar o ambiente do cliente (uma vez por conta).
+                  ao montar o ambiente do cliente (uma vez por conta). Use exatamente o nome{" "}
+                  <strong className="text-gray-800">humano</strong>.
                 </li>
                 <li>
                   Depois que alguém clicar <strong className="text-gray-800">Resolver</strong>, o bot volta a atender.

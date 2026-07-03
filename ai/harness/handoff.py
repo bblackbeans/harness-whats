@@ -1,5 +1,6 @@
 import logging
 
+from handoff.constants import HANDOFF_LABEL
 from harness.state import HarnessState
 from integrations.chatwoot import add_conversation_label, send_message, send_private_note
 from tenants import get_tenant
@@ -27,7 +28,7 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
     account_id = state["account_id"]
     conversation_id = state["conversation_id"]
     bot_token = tenant.routing.chatwoot_bot_token
-    label = (tenant.handoff.handoff_label or "Atendimento Humano").strip()
+    label = HANDOFF_LABEL
     handoff_msg = (tenant.handoff.message or "").strip()
     message_sent = False
 
@@ -52,7 +53,7 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
         logger.error("Falha ao aplicar etiqueta de handoff conv=%s: %s", conversation_id, error)
         hint = (
             "Crie a etiqueta no Chatwoot (Configurações → Etiquetas) "
-            f"com o nome exato «{label}», ou configure CHATWOOT_ADMIN_TOKEN no servidor."
+            f"com o nome exato «{label}»"
         )
         return {
             **state,

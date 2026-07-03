@@ -39,7 +39,7 @@ class HandoffSettings(BaseModel):
     on_no_knowledge: bool = True
     private_note_enabled: bool = True
     resume_bot_on_resolve: bool = True
-    handoff_label: str = "Atendimento Humano"
+    handoff_label: str = "humano"
 
 
 class TenantSettings(BaseModel):

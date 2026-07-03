@@ -53,7 +53,7 @@ class HandoffConfig:
     private_note_enabled: bool = True
     auto_resume_on_resolved: bool = True
     resume_bot_on_resolve: bool = True
-    handoff_label: str = "Atendimento Humano"
+    handoff_label: str = "humano"
 
 
 @dataclass(frozen=True)

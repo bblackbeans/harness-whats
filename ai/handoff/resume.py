@@ -1,5 +1,6 @@
 import logging
 
+from handoff.constants import HANDOFF_LABEL
 from integrations.chatwoot import (
     resume_bot_conversation,
     should_resume_bot_on_resolve,
@@ -121,7 +122,7 @@ async def _resume_same_conversation(
         account_id,
         conversation_id,
         bot_token=tenant.routing.chatwoot_bot_token,
-        handoff_label=tenant.handoff.handoff_label,
+        handoff_label=HANDOFF_LABEL,
     )
     if result.get("ok"):
         logger.info(
