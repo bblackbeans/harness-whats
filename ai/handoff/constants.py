@@ -1,3 +1,4 @@
-"""Etiqueta fixa no Chatwoot — sem espaços (limitação da plataforma)."""
+"""Marcadores fixos de handoff no Chatwoot."""
 
 HANDOFF_LABEL = "humano"
+HANDOFF_FLAG_ATTR = "harness_handoff"

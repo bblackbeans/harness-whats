@@ -237,14 +237,13 @@ export default function ClienteDetailPage() {
                   Ao pedir um atendente, o bot envia a mensagem de transferência e para de responder.
                 </li>
                 <li>
-                  A conversa recebe a etiqueta fixa{" "}
-                  <strong className="text-gray-800">humano</strong> no Chatwoot (sem espaço no nome).
+                  O bot marca o handoff internamente e tenta aplicar a etiqueta{" "}
+                  <strong className="text-gray-800">humano</strong> (crie em Configurações → Etiquetas).
                 </li>
                 <li>
-                  Crie essa etiqueta em{" "}
-                  <strong className="text-gray-800">Chatwoot → Configurações → Etiquetas</strong>{" "}
-                  ao montar o ambiente do cliente (uma vez por conta). Use exatamente o nome{" "}
-                  <strong className="text-gray-800">humano</strong>.
+                  Para a etiqueta aparecer automaticamente, configure{" "}
+                  <strong className="text-gray-800">CHATWOOT_ADMIN_TOKEN</strong> no servidor
+                  (token de um admin do Chatwoot).
                 </li>
                 <li>
                   Depois que alguém clicar <strong className="text-gray-800">Resolver</strong>, o bot volta a atender.

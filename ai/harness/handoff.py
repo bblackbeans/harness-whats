@@ -2,7 +2,7 @@ import logging
 
 from handoff.constants import HANDOFF_LABEL
 from harness.state import HarnessState
-from integrations.chatwoot import add_conversation_label, send_message, send_private_note
+from integrations.chatwoot import apply_handoff_markers, send_message, send_private_note
 from tenants import get_tenant
 
 logger = logging.getLogger(__name__)
@@ -45,15 +45,15 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
                 msg_result.get("error"),
             )
 
-    result = await add_conversation_label(
+    result = await apply_handoff_markers(
         account_id, conversation_id, label, bot_token=bot_token
     )
     if not result.get("ok"):
         error = str(result.get("error", ""))
-        logger.error("Falha ao aplicar etiqueta de handoff conv=%s: %s", conversation_id, error)
+        logger.error("Falha no handoff conv=%s: %s", conversation_id, error)
         hint = (
-            "Crie a etiqueta no Chatwoot (Configurações → Etiquetas) "
-            f"com o nome exato «{label}»"
+            "Verifique o token do robô no cliente e se o Chatwoot permite "
+            "custom_attributes para Agent Bots."
         )
         return {
             **state,
@@ -66,6 +66,13 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
     if tenant.handoff.private_note_enabled:
         note = _build_private_note(state, state.get("handoff_reason", "unknown"))
         await send_private_note(account_id, conversation_id, note, bot_token=bot_token)
+
+    if not result.get("label") and result.get("label_error"):
+        logger.warning(
+            "Handoff ativo sem etiqueta visível conv=%s: %s",
+            conversation_id,
+            result.get("label_error"),
+        )
 
     return {
         **state,
