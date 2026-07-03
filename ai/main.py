@@ -28,12 +28,14 @@ from integrations.chatwoot import (
     send_message,
     send_template,
     verify_webhook_signature,
+    webhook_account_id,
     webhook_conversation_id,
+    webhook_inbox_id,
     webhook_message_id,
 )
 from knowledge import chunks_by_tenant, is_rag_enabled, sync_tenant_index
-from ops.lifecycle import Lifecycle, recent_events, record_event
-from tenants.registry import get_tenant, list_tenants
+from ops.lifecycle import Lifecycle, list_events, recent_events, record_event
+from tenants.registry import get_tenant, list_tenants, resolve_tenant_by_routing
 
 load_dotenv()
 
@@ -213,22 +215,37 @@ async def chatwoot_webhook(request: Request, background_tasks: BackgroundTasks):
     if not inbound:
         reason = ignore_reason(payload) or "ignored"
         conversation_id = webhook_conversation_id(payload) or 0
-        if reason == "conversation_open_human_active" and conversation_id:
+        account_id = webhook_account_id(payload)
+        inbox_id = webhook_inbox_id(payload)
+        tenant_id = ""
+        if account_id is not None:
+            tenant_id = resolve_tenant_by_routing(account_id=account_id, inbox_id=inbox_id).id
+        if conversation_id or reason != "not_message_created":
             record_event(
                 delivery_id=delivery_id,
                 message_id=webhook_message_id(payload),
                 conversation_id=conversation_id,
-                status=Lifecycle.IGNORED,
+                status=Lifecycle.WEBHOOK_IGNORED,
                 detail=reason,
+                tenant_id=tenant_id,
+                account_id=account_id,
+                inbox_id=inbox_id,
             )
         return {"ignored": True, "reason": reason}
 
     if is_duplicate(delivery_id or inbound.get("message_id", "")):
+        tenant = resolve_tenant_by_routing(
+            account_id=inbound["account_id"],
+            inbox_id=inbound.get("inbox_id"),
+        )
         record_event(
             delivery_id=delivery_id,
             message_id=inbound.get("message_id", ""),
             conversation_id=inbound["conversation_id"],
             status=Lifecycle.DUPLICATE,
+            tenant_id=tenant.id,
+            account_id=inbound["account_id"],
+            inbox_id=inbound.get("inbox_id"),
         )
         return {"duplicate": True}
 

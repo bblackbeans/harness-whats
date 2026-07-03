@@ -73,6 +73,11 @@ def is_informational_question(text: str) -> bool:
     return any(signal in normalized for signal in _INFORMATIONAL_SIGNALS)
 
 
+def is_commercial_question(text: str) -> bool:
+    normalized = _normalize(text)
+    return any(signal in normalized for signal in _COMMERCIAL_SIGNALS)
+
+
 def should_handoff_no_knowledge(
     *,
     inbound_text: str,

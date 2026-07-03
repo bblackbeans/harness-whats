@@ -38,6 +38,7 @@ from harness_platform.usage_service import (
     usage_summary_by_tenant,
 )
 from harness_platform.audit_service import list_audit_events, log_audit
+from ops.lifecycle import list_events
 from harness_platform.knowledge_service import (
     delete_knowledge_file,
     list_knowledge_files,
@@ -451,6 +452,21 @@ def audit_list(
         }
         for e in events
     ]
+
+
+@router.get("/ops/logs")
+def ops_logs(
+    limit: int = Query(100, ge=1, le=500),
+    tenant_id: str | None = None,
+    db: Session = Depends(get_db),
+    _: AdminUser = Depends(get_current_admin),
+):
+    tenants = {t.id: t.name for t in list_tenants_db(db)}
+    events = list_events(limit=limit, tenant_id=tenant_id or None)
+    for event in events:
+        tid = event.get("tenant_id") or ""
+        event["tenant_name"] = tenants.get(tid, tid or "—")
+    return {"events": events}
 
 
 @router.get("/usage/summary")

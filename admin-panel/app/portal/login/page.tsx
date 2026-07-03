@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { portalLogin } from "@/lib/portal-api";
 import { FieldLabel } from "@/components/HelpTip";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function PortalLoginPage() {
   const router = useRouter();
@@ -66,10 +67,8 @@ export default function PortalLoginPage() {
           </div>
           <div>
             <FieldLabel label="Senha" help="Senha definida pelo administrador no cadastro do cliente." />
-            <input
-              type="password"
+            <PasswordInput
               name="portal-password"
-              className="input-field"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"

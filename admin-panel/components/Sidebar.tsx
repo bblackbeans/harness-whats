@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Cpu, LayoutDashboard, Users } from "lucide-react";
+import { BarChart3, Cpu, LayoutDashboard, ScrollText, Users } from "lucide-react";
 import { ResponsiveShell, type NavSection } from "@/components/ResponsiveShell";
 
 const navSections: NavSection[] = [
@@ -15,6 +15,12 @@ const navSections: NavSection[] = [
         match: (p) => p === "/clientes" || p.startsWith("/clientes/"),
       },
       { href: "/usage", label: "Métricas", icon: BarChart3 },
+      {
+        href: "/logs",
+        label: "Logs",
+        icon: ScrollText,
+        match: (p) => p === "/logs",
+      },
     ],
   },
   {

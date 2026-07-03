@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { login } from "@/lib/api";
 import { FieldLabel } from "@/components/HelpTip";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -61,10 +62,8 @@ export default function LoginPage() {
           </div>
           <div>
             <FieldLabel label="Senha" help="Senha definida na configuração do servidor (ADMIN_PASSWORD)." />
-            <input
-              type="password"
+            <PasswordInput
               name="admin-password"
-              className="input-field"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"

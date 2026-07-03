@@ -52,6 +52,9 @@ async def handle_conversation_status_webhook(payload: dict, delivery_id: str = "
             conversation_id=conversation_id,
             status=Lifecycle.IGNORED,
             detail="resume_bot_on_resolve_disabled",
+            tenant_id=tenant.id,
+            account_id=account_id,
+            inbox_id=inbox_id,
         )
         return {"ok": True, "skipped": True, "reason": "resume_bot_on_resolve_disabled"}
 
@@ -69,6 +72,9 @@ async def handle_conversation_status_webhook(payload: dict, delivery_id: str = "
             conversation_id=conversation_id,
             status=Lifecycle.BOT_RESUMED,
             detail=result.get("source", "chatwoot_resolve"),
+            tenant_id=tenant.id,
+            account_id=account_id,
+            inbox_id=inbox_id,
         )
     else:
         record_event(
@@ -77,6 +83,9 @@ async def handle_conversation_status_webhook(payload: dict, delivery_id: str = "
             conversation_id=conversation_id,
             status=Lifecycle.FAILED,
             detail=str(result.get("error", "resume_failed")),
+            tenant_id=tenant.id,
+            account_id=account_id,
+            inbox_id=inbox_id,
         )
 
     return result

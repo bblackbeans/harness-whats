@@ -216,6 +216,27 @@ export async function listAudit(limit = 20) {
   );
 }
 
+export type OpsLogEvent = {
+  ts: string;
+  delivery_id: string;
+  message_id: string;
+  conversation_id: number;
+  status: string;
+  detail: string;
+  tenant_id: string;
+  tenant_name?: string;
+  account_id: number | null;
+  inbox_id: number | null;
+  direction: "inbound" | "outbound" | "system";
+  label: string;
+};
+
+export async function listOpsLogs(limit = 100, tenantId?: string) {
+  const q = new URLSearchParams({ limit: String(limit) });
+  if (tenantId) q.set("tenant_id", tenantId);
+  return request<{ events: OpsLogEvent[] }>(`/admin/api/ops/logs?${q}`);
+}
+
 export async function createLlmProvider(name: string, apiKey: string) {
   return request("/admin/api/llm/providers", {
     method: "POST",

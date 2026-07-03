@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
 import { AppShell } from "@/components/Sidebar";
 import { FieldLabel, HelpTip } from "@/components/HelpTip";
+import { PasswordInput } from "@/components/PasswordInput";
 import {
   createLlmModel,
   createLlmProvider,
@@ -148,7 +149,7 @@ export default function LlmSettingsPage() {
           </div>
           <div>
             <FieldLabel label="API Key" help="Chave secreta do provedor. Fica criptografada no banco." />
-            <input className="input-field" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+            <PasswordInput value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
           </div>
           <button type="submit" className="btn-primary">
             Adicionar provedor
@@ -293,7 +294,7 @@ export default function LlmSettingsPage() {
             </div>
             <div>
               <FieldLabel label="Nova API Key" help="Deixe em branco para manter a chave atual." />
-              <input className="input-field" type="password" value={editProviderKey} onChange={(e) => setEditProviderKey(e.target.value)} />
+              <PasswordInput value={editProviderKey} onChange={(e) => setEditProviderKey(e.target.value)} />
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={editProviderActive} onChange={(e) => setEditProviderActive(e.target.checked)} />

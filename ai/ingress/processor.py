@@ -7,6 +7,7 @@ from harness_platform.limit_enforcement import is_tenant_blocked
 from harness.runner import run_conversation_turn
 from ingress.models import InboundEvent
 from ops.lifecycle import Lifecycle, record_event
+from tenants import resolve_tenant
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +16,20 @@ RETRY_BASE_SECONDS = float(os.getenv("INGRESS_RETRY_BASE_SECONDS", "1.5"))
 
 
 async def process_inbound(event: InboundEvent) -> dict:
+    tenant = resolve_tenant(event)
+    log_ctx = {
+        "tenant_id": tenant.id,
+        "account_id": event.account_id,
+        "inbox_id": event.inbox_id,
+    }
+
     record_event(
         delivery_id=event.delivery_id,
         message_id=event.message_id,
         conversation_id=event.conversation_id,
         status=Lifecycle.RECEIVED,
         detail=event.text[:120],
+        **log_ctx,
     )
 
     block = is_tenant_blocked(event)
@@ -31,6 +40,7 @@ async def process_inbound(event: InboundEvent) -> dict:
             conversation_id=event.conversation_id,
             status=Lifecycle.IGNORED,
             detail="plan_limit_exceeded",
+            **log_ctx,
         )
         return {"lifecycle_status": "limit_exceeded", "plan": block.get("plan")}
 
@@ -44,6 +54,7 @@ async def process_inbound(event: InboundEvent) -> dict:
                 conversation_id=event.conversation_id,
                 status=Lifecycle.PROCESSING,
                 detail=f"attempt={attempt}",
+                **log_ctx,
             )
 
             resume_result = await ensure_bot_controls_conversation(event)
@@ -57,19 +68,24 @@ async def process_inbound(event: InboundEvent) -> dict:
             lifecycle = result.get("lifecycle_status", "")
             if lifecycle == "handed_off":
                 status = Lifecycle.HANDED_OFF
+                detail = result.get("handoff_reason") or "handed_off"
             elif lifecycle == "send_failed":
                 status = Lifecycle.FAILED
+                detail = result.get("handoff_reason") or "send_failed"
             elif lifecycle == "replied" or result.get("outbound_text"):
                 status = Lifecycle.REPLIED
+                detail = (result.get("outbound_text") or result.get("intent") or "")[:120]
             else:
                 status = Lifecycle.IGNORED
+                detail = result.get("handoff_reason") or result.get("intent", "") or lifecycle
 
             record_event(
                 delivery_id=event.delivery_id,
                 message_id=event.message_id,
                 conversation_id=event.conversation_id,
                 status=status,
-                detail=result.get("handoff_reason") or result.get("intent", ""),
+                detail=detail,
+                **log_ctx,
             )
 
             return {
@@ -92,5 +108,6 @@ async def process_inbound(event: InboundEvent) -> dict:
         conversation_id=event.conversation_id,
         status=Lifecycle.FAILED,
         detail=str(last_error),
+        **log_ctx,
     )
     raise last_error or RuntimeError("processamento falhou")

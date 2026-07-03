@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { AppShell } from "@/components/Sidebar";
 import { FieldLabel } from "@/components/HelpTip";
+import { PasswordInput } from "@/components/PasswordInput";
 import { createTenant } from "@/lib/api";
 
 const STEPS = ["Dados", "Chatwoot", "Modelo", "Acesso ao portal", "Prompts"];
@@ -160,9 +161,8 @@ export default function NovoClientePage() {
                 label="Token de acesso do robô"
                 help="Token do Agent Bot no Chatwoot deste cliente. Cada cliente deve ter seu próprio robô e token."
               />
-              <input
-                className="input-field font-mono text-sm"
-                type="password"
+              <PasswordInput
+                className="font-mono text-sm"
                 value={chatwootBotToken}
                 onChange={(e) => setChatwootBotToken(e.target.value)}
                 placeholder="Cole o token do Agent Bot"
@@ -234,13 +234,7 @@ export default function NovoClientePage() {
             </div>
             <div>
               <FieldLabel label="Senha" help="Senha inicial do portal. O cliente pode pedir troca ao administrador." />
-              <input
-                className="input-field"
-                type="password"
-                value={portalPassword}
-                onChange={(e) => setPortalPassword(e.target.value)}
-                required
-              />
+              <PasswordInput value={portalPassword} onChange={(e) => setPortalPassword(e.target.value)} required />
             </div>
           </>
         )}

@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { AppShell } from "@/components/Sidebar";
 import { FieldLabel, HelpTip } from "@/components/HelpTip";
+import { PasswordInput } from "@/components/PasswordInput";
 import {
   createTenantUser,
   deleteKnowledge,
@@ -222,9 +223,8 @@ export default function ClienteDetailPage() {
                   Nenhum token configurado — usa o fallback da variável CHATWOOT_BOT_TOKEN no servidor.
                 </p>
               )}
-              <input
-                className="input-field font-mono text-sm"
-                type="password"
+              <PasswordInput
+                className="font-mono text-sm"
                 value={chatwootBotToken}
                 onChange={(e) => setChatwootBotToken(e.target.value)}
                 placeholder="Cole o novo token para substituir (deixe vazio para manter)"
@@ -360,9 +360,8 @@ export default function ClienteDetailPage() {
                   value={newUserEmail}
                   onChange={(e) => setNewUserEmail(e.target.value)}
                 />
-                <input
-                  className="input-field sm:col-span-2"
-                  type="password"
+                <PasswordInput
+                  className="sm:col-span-2"
                   placeholder="Senha"
                   value={newUserPassword}
                   onChange={(e) => setNewUserPassword(e.target.value)}
