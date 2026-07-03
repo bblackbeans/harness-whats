@@ -148,6 +148,7 @@ def tenant_to_config(tenant: Tenant) -> TenantConfig:
             on_no_knowledge=settings.handoff.on_no_knowledge,
             private_note_enabled=settings.handoff.private_note_enabled,
             resume_bot_on_resolve=settings.handoff.resume_bot_on_resolve,
+            handoff_label=settings.handoff.handoff_label,
         ),
         root_dir="",
     )

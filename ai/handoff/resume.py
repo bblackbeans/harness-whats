@@ -121,6 +121,7 @@ async def _resume_same_conversation(
         account_id,
         conversation_id,
         bot_token=tenant.routing.chatwoot_bot_token,
+        handoff_label=tenant.handoff.handoff_label,
     )
     if result.get("ok"):
         logger.info(

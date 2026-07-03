@@ -51,6 +51,7 @@ IGNORED_REASON_LABELS: dict[str, str] = {
     "not_message_created": "Evento não é mensagem nova",
     "not_incoming": "Não é mensagem do cliente",
     "conversation_open_human_active": "Atendente humano ativo",
+    "handoff_label_active": "Etiqueta de handoff ativa — aguardando humano",
     "empty_content": "Mensagem vazia",
     "missing_conversation_or_account": "Sem conversa ou account no payload",
     "sender_not_contact": "Remetente não é o contato",

@@ -135,7 +135,7 @@ def health():
             "context": "summarization_policy",
             "memory": "semantic_sqlite_per_tenant",
             "knowledge": "rag_sqlite_per_tenant",
-            "handoff": "chatwoot_toggle_open",
+            "handoff": "chatwoot_label",
             "agent": "langgraph_component",
             "channel": "chatwoot_multichannel",
             "tenants": "config_per_client_db_or_filesystem",
@@ -210,16 +210,21 @@ async def chatwoot_webhook(request: Request, background_tasks: BackgroundTasks):
             },
         )
 
-    inbound = extract_inbound_message(payload)
+    inbound = None
+    account_id = webhook_account_id(payload)
+    inbox_id = webhook_inbox_id(payload)
+    handoff_label = None
+    tenant_id = ""
+    if account_id is not None:
+        tenant = resolve_tenant_by_routing(account_id=account_id, inbox_id=inbox_id)
+        tenant_id = tenant.id
+        handoff_label = tenant.handoff.handoff_label
+
+    inbound = extract_inbound_message(payload, handoff_label=handoff_label)
 
     if not inbound:
-        reason = ignore_reason(payload) or "ignored"
+        reason = ignore_reason(payload, handoff_label=handoff_label) or "ignored"
         conversation_id = webhook_conversation_id(payload) or 0
-        account_id = webhook_account_id(payload)
-        inbox_id = webhook_inbox_id(payload)
-        tenant_id = ""
-        if account_id is not None:
-            tenant_id = resolve_tenant_by_routing(account_id=account_id, inbox_id=inbox_id).id
         if conversation_id or reason != "not_message_created":
             record_event(
                 delivery_id=delivery_id,

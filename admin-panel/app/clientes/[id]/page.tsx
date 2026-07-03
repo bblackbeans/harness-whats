@@ -52,6 +52,7 @@ export default function ClienteDetailPage() {
   const [accountIds, setAccountIds] = useState("");
   const [chatwootBotToken, setChatwootBotToken] = useState("");
   const [chatwootBotTokenPreview, setChatwootBotTokenPreview] = useState("");
+  const [handoffLabel, setHandoffLabel] = useState("Atendimento Humano");
   const [llmModelId, setLlmModelId] = useState<number | "">("");
   const [prompts, setPrompts] = useState<Record<string, string>>({});
 
@@ -73,6 +74,7 @@ export default function ClienteDetailPage() {
         setAccountIds((t.settings?.routing?.chatwoot_account_ids || []).join(", "));
         setChatwootBotToken("");
         setChatwootBotTokenPreview(t.settings?.routing?.chatwoot_bot_token_preview || "");
+        setHandoffLabel((t.settings?.handoff as { handoff_label?: string })?.handoff_label || "Atendimento Humano");
         setLlmModelId(t.settings?.model?.llm_model_id ?? "");
         setPrompts(t.prompts || {});
         setKnowledge(k.files || []);
@@ -101,6 +103,9 @@ export default function ClienteDetailPage() {
           model: {
             llm_model_id: llmModelId === "" ? null : Number(llmModelId),
             name: selected?.model_id || cliente?.settings?.model?.name,
+          },
+          handoff: {
+            handoff_label: handoffLabel.trim() || "Atendimento Humano",
           },
         },
         prompts,
@@ -228,6 +233,18 @@ export default function ClienteDetailPage() {
                 value={chatwootBotToken}
                 onChange={(e) => setChatwootBotToken(e.target.value)}
                 placeholder="Cole o novo token para substituir (deixe vazio para manter)"
+              />
+            </div>
+            <div>
+              <FieldLabel
+                label="Etiqueta de handoff (Chatwoot)"
+                help="Quando precisar de humano, o bot para de responder e aplica esta etiqueta na conversa. O Harness cria a etiqueta no Chatwoot automaticamente, se ainda não existir."
+              />
+              <input
+                className="input-field font-mono text-sm"
+                value={handoffLabel}
+                onChange={(e) => setHandoffLabel(e.target.value)}
+                placeholder="Atendimento Humano"
               />
             </div>
             <div>

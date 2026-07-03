@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/Sidebar";
-import { listAudit, listTenants, usageSummary } from "@/lib/api";
+import { listAudit, listTenants, Tenant, usageSummary } from "@/lib/api";
 import { formatBrasiliaDateTime } from "@/lib/datetime";
 
+const MAX_CLIENT_CARDS = 6;
+
 export default function DashboardPage() {
-  const [totalClientes, setTotalClientes] = useState(0);
+  const [clientes, setClientes] = useState<Tenant[]>([]);
   const [ativos, setAtivos] = useState(0);
   const [usage, setUsage] = useState<Array<{ tenant_id: string; calls: number; cost_estimate: number }>>([]);
   const [audit, setAudit] = useState<Array<{ action: string; tenant_id: string | null; created_at: string }>>([]);
@@ -20,9 +22,9 @@ export default function DashboardPage() {
       return;
     }
     Promise.all([listTenants(), usageSummary().catch(() => []), listAudit(10).catch(() => [])])
-      .then(([clientes, u, a]) => {
-        setTotalClientes(clientes.length);
-        setAtivos(clientes.filter((c) => c.active).length);
+      .then(([lista, u, a]) => {
+        setClientes(lista);
+        setAtivos(lista.filter((c) => c.active).length);
         setUsage(u);
         setAudit(a);
       })
@@ -30,7 +32,9 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const totalClientes = clientes.length;
   const totalCost = usage.reduce((s, u) => s + (u.cost_estimate || 0), 0);
+  const clientesVisiveis = clientes.slice(0, MAX_CLIENT_CARDS);
 
   return (
     <AppShell>
@@ -76,12 +80,42 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500">Nenhum cliente cadastrado.</p>
           )}
           {!loading && totalClientes > 0 && (
-            <p className="text-sm text-gray-600">
-              {totalClientes} cliente{totalClientes !== 1 ? "s" : ""} na plataforma.{" "}
-              <Link href="/clientes" className="font-medium text-brand-600">
-                Gerenciar clientes →
-              </Link>
-            </p>
+            <>
+              <p className="mb-4 text-sm text-gray-600">
+                {totalClientes} cliente{totalClientes !== 1 ? "s" : ""} na plataforma
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {clientesVisiveis.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/clientes/${c.id}`}
+                    className="group rounded-lg border border-gray-200 bg-gray-50/50 p-4 transition hover:border-brand-300 hover:bg-brand-50/40"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-medium text-gray-900 group-hover:text-brand-700">{c.name}</p>
+                      {c.active ? (
+                        <span className="badge-success shrink-0">Ativo</span>
+                      ) : (
+                        <span className="badge-neutral shrink-0">Inativo</span>
+                      )}
+                    </div>
+                    <p className="mt-1 truncate text-xs text-gray-500">{c.id}</p>
+                    {c.settings?.model?.name && (
+                      <p className="mt-2 text-xs text-gray-500">
+                        Modelo: <span className="text-gray-700">{c.settings.model.name}</span>
+                      </p>
+                    )}
+                  </Link>
+                ))}
+              </div>
+              {totalClientes > MAX_CLIENT_CARDS && (
+                <p className="mt-4 text-sm text-gray-600">
+                  <Link href="/clientes" className="font-medium text-brand-600">
+                    Ver todos os {totalClientes} clientes →
+                  </Link>
+                </p>
+              )}
+            </>
           )}
         </div>
 

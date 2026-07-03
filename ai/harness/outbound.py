@@ -3,7 +3,7 @@ import logging
 from langchain_core.messages import AIMessage
 
 from harness.state import HarnessState
-from integrations.chatwoot import send_message
+from integrations.chatwoot import send_message, open_conversation
 from tenants import get_tenant
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,18 @@ async def send_reply(state: HarnessState) -> HarnessState:
             "lifecycle_status": "send_failed",
             "handoff_reason": str(result.get("error", "send_failed")),
         }
+
+    open_result = await open_conversation(
+        state["account_id"],
+        state["conversation_id"],
+        bot_token=tenant.routing.chatwoot_bot_token,
+    )
+    if not open_result.get("ok"):
+        logger.warning(
+            "Resposta enviada mas falha ao abrir conversa conv=%s: %s",
+            state["conversation_id"],
+            open_result.get("error"),
+        )
 
     return {
         **state,

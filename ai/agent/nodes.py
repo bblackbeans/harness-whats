@@ -183,6 +183,17 @@ def run_agent(state: HarnessState) -> HarnessState:
         bot_reply=reply,
     )
 
+    if handoff:
+        return {
+            **state,
+            "intent": str(result.get("intent", "other")),
+            "should_reply": False,
+            "outbound_text": "",
+            "handoff_to_human": True,
+            "handoff_reason": reason,
+            "new_semantic_facts": [str(f) for f in result.get("new_facts", []) if f],
+        }
+
     return {
         **state,
         "intent": str(result.get("intent", "other")),

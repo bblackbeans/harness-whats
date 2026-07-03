@@ -48,9 +48,9 @@ function LogsLegend() {
         </li>
       </ul>
       <p className="mt-3 border-t border-gray-200 pt-3 text-xs text-gray-500">
-        <strong className="text-gray-700">Chatwoot:</strong> conversas com Agent Bot ficam em status{" "}
-        <em>pendente</em>, não em &quot;Abertas&quot;. No filtro de conversas, use{" "}
-        <strong>Todos</strong> ou <strong>Pendentes</strong> — não só &quot;Abertas&quot;.
+        <strong className="text-gray-700">Chatwoot:</strong> conversas do bot ficam em{" "}
+        <em>Abertas</em> e aparecem na tela inicial. Handoff aplica a etiqueta configurada no cliente
+        e o bot para de responder até alguém clicar Resolver.
       </p>
     </div>
   );

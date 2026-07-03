@@ -127,16 +127,26 @@ def conversation_status(payload: dict) -> str:
     return _conversation_status(payload)
 
 
-def ignore_reason(payload: dict) -> str | None:
+def _conversation_labels(payload: dict) -> list[str]:
+    conversation = payload.get("conversation") or {}
+    labels = conversation.get("labels")
+    if isinstance(labels, list):
+        return [str(label) for label in labels if label]
+    if isinstance(labels, str) and labels.strip():
+        return [part.strip() for part in labels.split(",") if part.strip()]
+    return []
+
+
+def ignore_reason(payload: dict, *, handoff_label: str | None = None) -> str | None:
     if str(payload.get("event", "")).lower() != "message_created":
         return "not_message_created"
 
     if _message_type(payload) != "incoming":
         return "not_incoming"
 
-    status = _conversation_status(payload)
-    if status == "open":
-        return "conversation_open_human_active"
+    label = (handoff_label or "").strip().lower()
+    if label and any(label == existing.lower() for existing in _conversation_labels(payload)):
+        return "handoff_label_active"
 
     content = _message_content(payload)
     if not content:
@@ -189,8 +199,8 @@ def should_resume_bot_on_resolve(payload: dict) -> bool:
     return False
 
 
-def extract_inbound_message(payload: dict) -> dict | None:
-    if ignore_reason(payload):
+def extract_inbound_message(payload: dict, *, handoff_label: str | None = None) -> dict | None:
+    if ignore_reason(payload, handoff_label=handoff_label):
         return None
 
     content = _message_content(payload)
@@ -231,6 +241,115 @@ async def send_private_note(
         return {"ok": True, "data": response.json()}
 
 
+async def list_account_labels(account_id: int, *, bot_token: str | None = None) -> dict:
+    if not _is_token_configured(bot_token):
+        return {"ok": False, "error": "Token do robô Chatwoot não configurado para este cliente"}
+
+    url = f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}/labels"
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(url, headers=_headers(bot_token))
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        data = response.json()
+        items = data if isinstance(data, list) else data.get("payload", [])
+        titles = [str(item.get("title", "")).lower() for item in items if isinstance(item, dict)]
+        return {"ok": True, "titles": titles}
+
+
+async def ensure_account_label(
+    account_id: int, label: str, *, bot_token: str | None = None
+) -> dict:
+    """Garante que a etiqueta existe na conta antes de aplicar na conversa."""
+    title = (label or "").strip()
+    if not title:
+        return {"ok": True, "skipped": True}
+
+    existing = await list_account_labels(account_id, bot_token=bot_token)
+    if not existing.get("ok"):
+        return existing
+    if title.lower() in existing.get("titles", []):
+        return {"ok": True, "created": False}
+
+    url = f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}/labels"
+    payload = {"title": title, "show_on_sidebar": True}
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(url, json=payload, headers=_headers(bot_token))
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        return {"ok": True, "created": True, "data": response.json()}
+
+
+async def list_conversation_labels(
+    account_id: int, conversation_id: int, *, bot_token: str | None = None
+) -> dict:
+    if not _is_token_configured(bot_token):
+        return {"ok": False, "error": "Token do robô Chatwoot não configurado para este cliente"}
+
+    url = (
+        f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}"
+        f"/conversations/{conversation_id}/labels"
+    )
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(url, headers=_headers(bot_token))
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        data = response.json()
+        payload = data.get("payload", data) if isinstance(data, dict) else data
+        labels = [str(label) for label in (payload or []) if label]
+        return {"ok": True, "labels": labels}
+
+
+async def set_conversation_labels(
+    account_id: int, conversation_id: int, labels: list[str], *, bot_token: str | None = None
+) -> dict:
+    if not _is_token_configured(bot_token):
+        return {"ok": False, "error": "Token do robô Chatwoot não configurado para este cliente"}
+
+    url = (
+        f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}"
+        f"/conversations/{conversation_id}/labels"
+    )
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(url, json={"labels": labels}, headers=_headers(bot_token))
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        return {"ok": True, "data": response.json()}
+
+
+async def add_conversation_label(
+    account_id: int, conversation_id: int, label: str, *, bot_token: str | None = None
+) -> dict:
+    ensured = await ensure_account_label(account_id, label, bot_token=bot_token)
+    if not ensured.get("ok"):
+        return ensured
+
+    current = await list_conversation_labels(account_id, conversation_id, bot_token=bot_token)
+    if not current.get("ok"):
+        return current
+    labels = list(current.get("labels") or [])
+    normalized = label.strip().lower()
+    if not any(existing.lower() == normalized for existing in labels):
+        labels.append(label.strip())
+    return await set_conversation_labels(account_id, conversation_id, labels, bot_token=bot_token)
+
+
+async def remove_conversation_label(
+    account_id: int, conversation_id: int, label: str, *, bot_token: str | None = None
+) -> dict:
+    current = await list_conversation_labels(account_id, conversation_id, bot_token=bot_token)
+    if not current.get("ok"):
+        return current
+    labels = [item for item in (current.get("labels") or []) if item.lower() != label.strip().lower()]
+    return await set_conversation_labels(account_id, conversation_id, labels, bot_token=bot_token)
+
+
+async def open_conversation(
+    account_id: int, conversation_id: int, *, bot_token: str | None = None
+) -> dict:
+    """Mantém a conversa visível em Abertas no Chatwoot."""
+    return await handoff_conversation(account_id, conversation_id, bot_token=bot_token)
+
+
 async def handoff_conversation(
     account_id: int, conversation_id: int, *, bot_token: str | None = None
 ) -> dict:
@@ -251,23 +370,21 @@ async def handoff_conversation(
 
 
 async def resume_bot_conversation(
-    account_id: int, conversation_id: int, *, bot_token: str | None = None
+    account_id: int, conversation_id: int, *, bot_token: str | None = None, handoff_label: str = ""
 ) -> dict:
-    """Devolve a conversa ao Agent Bot (status pending) na mesma thread."""
+    """Remove etiqueta de handoff e reabre a conversa para o bot voltar a atender."""
     if not _is_token_configured(bot_token):
         return {"ok": False, "error": "Chatwoot não configurado"}
 
-    url = (
-        f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}"
-        f"/conversations/{conversation_id}/toggle_status"
-    )
-    payload = {"status": "pending"}
+    label = (handoff_label or "").strip()
+    if label:
+        removed = await remove_conversation_label(
+            account_id, conversation_id, label, bot_token=bot_token
+        )
+        if not removed.get("ok"):
+            return removed
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(url, json=payload, headers=_headers(bot_token))
-        if response.status_code >= 400:
-            return {"ok": False, "error": response.text, "status": response.status_code}
-        return {"ok": True, "data": response.json()}
+    return await open_conversation(account_id, conversation_id, bot_token=bot_token)
 
 
 async def send_message(

@@ -1,6 +1,5 @@
 from harness.state import HarnessState
-from handoff.policy import resolve_handoff
-from integrations.chatwoot import handoff_conversation, send_message, send_private_note
+from integrations.chatwoot import add_conversation_label, send_private_note
 from tenants import get_tenant
 
 
@@ -23,16 +22,12 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
 
     account_id = state["account_id"]
     conversation_id = state["conversation_id"]
-    handoff_message = tenant.handoff.message.strip()
-    outbound = state.get("outbound_text", "").strip()
     bot_token = tenant.routing.chatwoot_bot_token
+    label = (tenant.handoff.handoff_label or "Atendimento Humano").strip()
 
-    if handoff_message and outbound != handoff_message:
-        if not state.get("should_reply") or not outbound:
-            await send_message(account_id, conversation_id, handoff_message, bot_token=bot_token)
-            state = {**state, "outbound_text": handoff_message, "should_reply": True}
-
-    result = await handoff_conversation(account_id, conversation_id, bot_token=bot_token)
+    result = await add_conversation_label(
+        account_id, conversation_id, label, bot_token=bot_token
+    )
     if not result.get("ok"):
         return {
             **state,
@@ -44,4 +39,9 @@ async def execute_handoff(state: HarnessState) -> HarnessState:
         note = _build_private_note(state, state.get("handoff_reason", "unknown"))
         await send_private_note(account_id, conversation_id, note, bot_token=bot_token)
 
-    return {**state, "lifecycle_status": "handed_off"}
+    return {
+        **state,
+        "should_reply": False,
+        "outbound_text": "",
+        "lifecycle_status": "handed_off",
+    }
