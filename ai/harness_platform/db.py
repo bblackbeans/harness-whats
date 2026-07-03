@@ -4,9 +4,22 @@ from collections.abc import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://harness:harness@localhost:5432/harness",
+
+def normalize_database_url(url: str) -> str:
+    """Aceita postgres:// (Easypanel, Railway, etc.) e força driver psycopg2."""
+    raw = url.strip()
+    if raw.startswith("postgres://"):
+        return "postgresql+psycopg2://" + raw[len("postgres://") :]
+    if raw.startswith("postgresql://") and "+" not in raw.split("://", 1)[0]:
+        return "postgresql+psycopg2://" + raw[len("postgresql://") :]
+    return raw
+
+
+DATABASE_URL = normalize_database_url(
+    os.getenv(
+        "DATABASE_URL",
+        "postgresql+psycopg2://harness:harness@localhost:5432/harness",
+    )
 )
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
