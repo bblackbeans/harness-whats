@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from langchain_core.messages import AIMessage, HumanMessage
@@ -13,9 +14,18 @@ from handoff.policy import resolve_handoff
 from memory.semantic import recall, store
 from tenants import get_tenant, load_prompt
 
+logger = logging.getLogger(__name__)
+
 _DEFAULT_AGENT_PROMPT = (
     "Você é um assistente virtual de atendimento por mensagem. "
-    "Responda apenas JSON com: intent, should_reply, reply, new_facts."
+    "Responda em português do Brasil de forma natural e útil."
+)
+_AGENT_JSON_INSTRUCTIONS = (
+    "\n\n---\n"
+    "Formato de saída obrigatório: responda APENAS com JSON válido (sem markdown), "
+    'com as chaves "intent" (string), "should_reply" (boolean), '
+    '"reply" (string — mensagem enviada ao cliente), '
+    '"new_facts" (array de strings), "handoff_to_human" (boolean, opcional).'
 )
 _DEFAULT_FACTS_PROMPT = (
     'Extraia fatos duráveis sobre o usuário. Retorne JSON: {"facts": ["..."]}'
@@ -87,7 +97,8 @@ def run_agent(state: HarnessState) -> HarnessState:
     tenant = _tenant_from_state(state)
     llm = get_llm(tenant)
     text = state["inbound_text"]
-    system_prompt = load_prompt(tenant, "agent_system", _DEFAULT_AGENT_PROMPT)
+    persona_prompt = load_prompt(tenant, "agent_system", _DEFAULT_AGENT_PROMPT)
+    system_prompt = persona_prompt + _AGENT_JSON_INSTRUCTIONS
     agent_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -96,6 +107,7 @@ def run_agent(state: HarnessState) -> HarnessState:
     )
 
     if not llm:
+        logger.error("LLM indisponível para tenant=%s", tenant.id)
         handoff, reason = resolve_handoff(
             inbound_text=text,
             retrieved_knowledge=state.get("retrieved_knowledge", []),
@@ -106,31 +118,60 @@ def run_agent(state: HarnessState) -> HarnessState:
             **state,
             "intent": "other",
             "should_reply": True,
-            "outbound_text": f"Recebi sua mensagem: {text}",
+            "outbound_text": (
+                "No momento não consigo processar com IA. "
+                "Verifique o provedor LLM no painel ou OPENAI_API_KEY no servidor."
+            ),
             "handoff_to_human": handoff,
-            "handoff_reason": reason,
+            "handoff_reason": reason or "llm_unavailable",
             "new_semantic_facts": [],
         }
 
     chain = agent_prompt | llm | JsonOutputParser()
     context_text = state.get("agent_context", text)
+    model_ref = tenant.model.name
     try:
         result = chain.invoke({"context": context_text})
         reply_text = str(result.get("reply") or "")
         log_llm_usage(
             tenant,
-            tenant.model.name,
+            model_ref,
             max(1, len(context_text) // 4),
             max(1, len(reply_text) // 4),
         )
-    except Exception:
-        result = {
-            "intent": "other",
-            "should_reply": True,
-            "reply": f"Recebi sua mensagem: {text}",
-            "handoff_to_human": False,
-            "new_facts": [],
-        }
+    except Exception as error:
+        logger.warning(
+            "Falha ao parsear JSON do agente tenant=%s: %s",
+            tenant.id,
+            error,
+        )
+        try:
+            raw = (agent_prompt | llm).invoke({"context": context_text})
+            content = str(getattr(raw, "content", raw)).strip()
+            result = {
+                "intent": "other",
+                "should_reply": bool(content),
+                "reply": content,
+                "handoff_to_human": False,
+                "new_facts": [],
+            }
+            if content:
+                log_llm_usage(
+                    tenant,
+                    model_ref,
+                    max(1, len(context_text) // 4),
+                    max(1, len(content) // 4),
+                )
+        except Exception as inner:
+            logger.exception("Falha na chamada LLM tenant=%s", tenant.id)
+            result = {
+                "intent": "other",
+                "should_reply": True,
+                "reply": "Desculpe, tive um problema ao processar sua mensagem. Pode tentar de novo?",
+                "handoff_to_human": False,
+                "new_facts": [],
+                "handoff_reason": str(inner),
+            }
 
     llm_handoff = bool(result.get("handoff_to_human", False))
     reply = str(result.get("reply") or "")
