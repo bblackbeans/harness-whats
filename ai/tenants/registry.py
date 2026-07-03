@@ -2,7 +2,8 @@ import os
 
 from ingress.models import InboundEvent
 from tenants.config import TenantConfig
-from tenants.loader import load_all_tenants, load_default_tenant
+from tenants.db_loader import get_tenant_db_or_fs, load_all_tenants_db
+from tenants.loader import load_default_tenant
 
 _tenants: dict[str, TenantConfig] | None = None
 
@@ -10,7 +11,7 @@ _tenants: dict[str, TenantConfig] | None = None
 def _get_tenants() -> dict[str, TenantConfig]:
     global _tenants
     if _tenants is None:
-        loaded = load_all_tenants()
+        loaded = load_all_tenants_db()
         default = load_default_tenant()
         loaded.setdefault(default.id, default)
         _tenants = loaded
@@ -19,6 +20,9 @@ def _get_tenants() -> dict[str, TenantConfig]:
 
 def reload_tenants() -> dict[str, TenantConfig]:
     global _tenants
+    from harness_platform.cache import invalidate_tenant_cache
+
+    invalidate_tenant_cache()
     _tenants = None
     return _get_tenants()
 
@@ -31,7 +35,7 @@ def get_tenant(tenant_id: str) -> TenantConfig:
     tenants = _get_tenants()
     if tenant_id in tenants:
         return tenants[tenant_id]
-    return load_default_tenant()
+    return get_tenant_db_or_fs(tenant_id)
 
 
 def resolve_tenant_by_routing(

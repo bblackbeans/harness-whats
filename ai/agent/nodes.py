@@ -5,7 +5,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from agent.llm import get_llm
+from agent.llm import get_llm, log_llm_usage
 from context.policy import build_agent_context
 from harness.state import HarnessState
 from knowledge.retrieve import format_knowledge_block, retrieve_knowledge_chunks
@@ -113,8 +113,16 @@ def run_agent(state: HarnessState) -> HarnessState:
         }
 
     chain = agent_prompt | llm | JsonOutputParser()
+    context_text = state.get("agent_context", text)
     try:
-        result = chain.invoke({"context": state.get("agent_context", text)})
+        result = chain.invoke({"context": context_text})
+        reply_text = str(result.get("reply") or "")
+        log_llm_usage(
+            tenant,
+            tenant.model.name,
+            max(1, len(context_text) // 4),
+            max(1, len(reply_text) // 4),
+        )
     except Exception:
         result = {
             "intent": "other",

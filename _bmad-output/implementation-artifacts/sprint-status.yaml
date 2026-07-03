@@ -1,0 +1,21 @@
+# Sprint Status — SaaS Platform
+
+sprint: 4
+goal: "Painel do cliente (self-service) com auth tenant_admin"
+started: 2026-07-01
+completed: 2026-07-01
+
+stories:
+  - id: "8.1"
+    title: Auth tenant_admin escopo único
+    status: completed
+  - id: "8.2"
+    title: Subset self-service prompts FAQ métricas
+    status: completed
+  - id: "8.3"
+    title: Solicitação troca modelo com aprovação
+    status: completed
+
+current_story: null
+
+next_sprint: null

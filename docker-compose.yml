@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: harness
+      POSTGRES_PASSWORD: harness
+      POSTGRES_DB: harness
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harness -d harness"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   harness:
     build:
       context: ./ai
@@ -7,10 +24,17 @@ services:
       - "${PORT:-8787}:8787"
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://harness:harness@postgres:5432/harness
+      TENANTS_DIR: /app/tenant-data
     volumes:
       - harness_data:/app/data
-      - ./tenants:/app/tenants:ro
+      - ./tenants:/app/tenant-data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   harness_data:
+  postgres_data:

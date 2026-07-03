@@ -5,8 +5,14 @@ from typing import Literal
 
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, model_validator
+
+from admin.auth import ensure_seed_admin
+from admin.routes import router as admin_router
+from portal.routes import router as portal_router
+from harness_platform.db import SessionLocal
 
 from agent.nodes import generate_dispatch_message
 from handoff.resume import handle_conversation_status_webhook
@@ -35,6 +41,34 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="WhatsApp Harness (LangGraph + Chatwoot)")
+
+_cors_origins = os.getenv("ADMIN_CORS_ORIGINS", "http://localhost:3000").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in _cors_origins if o.strip()],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(admin_router)
+app.include_router(portal_router)
+
+
+@app.on_event("startup")
+def startup_seed_admin():
+    try:
+        with SessionLocal() as db:
+            ensure_seed_admin(db)
+            from harness_platform.llm_service import seed_default_openai
+            from harness_platform.plan_service import seed_default_plans
+
+            seed_default_openai(db)
+            seed_default_plans(db)
+            from harness_platform.portal_service import seed_demo_tenant_user
+
+            seed_demo_tenant_user(db)
+    except Exception:
+        logger.warning("Não foi possível seed admin/LLM (DB indisponível?)", exc_info=True)
 
 
 class DispatchContact(BaseModel):
@@ -102,7 +136,9 @@ def health():
             "handoff": "chatwoot_toggle_open",
             "agent": "langgraph_component",
             "channel": "chatwoot_multichannel",
-            "tenants": "config_per_client",
+            "tenants": "config_per_client_db_or_filesystem",
+            "admin_api": "jwt_crud_tenants",
+            "portal_api": "tenant_self_service",
         },
     }
 

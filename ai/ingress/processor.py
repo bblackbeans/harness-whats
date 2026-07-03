@@ -3,6 +3,7 @@ import logging
 import os
 
 from handoff.resume import ensure_bot_controls_conversation
+from harness_platform.limit_enforcement import is_tenant_blocked
 from harness.runner import run_conversation_turn
 from ingress.models import InboundEvent
 from ops.lifecycle import Lifecycle, record_event
@@ -21,6 +22,17 @@ async def process_inbound(event: InboundEvent) -> dict:
         status=Lifecycle.RECEIVED,
         detail=event.text[:120],
     )
+
+    block = is_tenant_blocked(event)
+    if block:
+        record_event(
+            delivery_id=event.delivery_id,
+            message_id=event.message_id,
+            conversation_id=event.conversation_id,
+            status=Lifecycle.IGNORED,
+            detail="plan_limit_exceeded",
+        )
+        return {"lifecycle_status": "limit_exceeded", "plan": block.get("plan")}
 
     last_error: Exception | None = None
 

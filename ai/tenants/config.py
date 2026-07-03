@@ -1,4 +1,6 @@
 from dataclasses import dataclass, field
+import os
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -6,6 +8,7 @@ class ModelConfig:
     name: str = "gpt-4o-mini"
     temperature: float = 0.3
     api_key_env: str = "OPENAI_API_KEY"
+    llm_model_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -67,4 +70,7 @@ class TenantConfig:
         return f"{self.root_dir}/prompts/{name}.txt"
 
     def knowledge_dir(self) -> str:
-        return f"{self.root_dir}/knowledge"
+        if self.root_dir:
+            return f"{self.root_dir}/knowledge"
+        data_dir = os.getenv("HARNESS_DATA_DIR", "data")
+        return str(Path(data_dir) / "knowledge" / self.id)
