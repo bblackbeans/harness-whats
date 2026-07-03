@@ -231,10 +231,19 @@ export type OpsLogEvent = {
   label: string;
 };
 
-export async function listOpsLogs(limit = 100, tenantId?: string) {
-  const q = new URLSearchParams({ limit: String(limit) });
+export async function listOpsLogs(page = 1, pageSize = 20, tenantId?: string) {
+  const q = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
   if (tenantId) q.set("tenant_id", tenantId);
-  return request<{ events: OpsLogEvent[] }>(`/admin/api/ops/logs?${q}`);
+  return request<{
+    events: OpsLogEvent[];
+    total: number;
+    page: number;
+    page_size: number;
+    pages: number;
+  }>(`/admin/api/ops/logs?${q}`);
 }
 
 export async function createLlmProvider(name: string, apiKey: string) {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/Sidebar";
 import { listAudit, listTenants, usageSummary } from "@/lib/api";
+import { formatBrasiliaDateTime } from "@/lib/datetime";
 
 export default function DashboardPage() {
   const [totalClientes, setTotalClientes] = useState(0);
@@ -97,7 +98,7 @@ export default function DashboardPage() {
                     {e.action}
                     {e.tenant_id ? ` · ${e.tenant_id}` : ""}
                   </span>
-                  <span className="text-xs text-gray-400">{e.created_at?.slice(0, 19)}</span>
+                  <span className="text-xs text-gray-400">{formatBrasiliaDateTime(e.created_at)}</span>
                 </li>
               ))}
             </ul>

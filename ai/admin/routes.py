@@ -456,17 +456,30 @@ def audit_list(
 
 @router.get("/ops/logs")
 def ops_logs(
-    limit: int = Query(100, ge=1, le=500),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     tenant_id: str | None = None,
     db: Session = Depends(get_db),
     _: AdminUser = Depends(get_current_admin),
 ):
     tenants = {t.id: t.name for t in list_tenants_db(db)}
-    events = list_events(limit=limit, tenant_id=tenant_id or None)
+    offset = (page - 1) * page_size
+    events, total = list_events(
+        limit=page_size,
+        offset=offset,
+        tenant_id=tenant_id or None,
+    )
     for event in events:
         tid = event.get("tenant_id") or ""
         event["tenant_name"] = tenants.get(tid, tid or "—")
-    return {"events": events}
+    pages = max(1, (total + page_size - 1) // page_size)
+    return {
+        "events": events,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": pages,
+    }
 
 
 @router.get("/usage/summary")

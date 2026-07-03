@@ -163,17 +163,24 @@ def _read_file_events(limit: int) -> list[dict]:
     return events
 
 
-def list_events(*, limit: int = 100, tenant_id: str | None = None) -> list[dict]:
+def list_events(
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    tenant_id: str | None = None,
+) -> tuple[list[dict], int]:
     merged: dict[str, dict] = {}
-    for raw in list(_recent) + _read_file_events(limit * 2):
+    for raw in list(_recent) + _read_file_events(FILE_READ_LIMIT):
         normalized = _normalize_event(raw)
         merged[_event_key(normalized)] = normalized
 
     events = sorted(merged.values(), key=lambda item: item["ts"], reverse=True)
     if tenant_id:
         events = [event for event in events if event.get("tenant_id") == tenant_id]
-    return events[:limit]
+    total = len(events)
+    return events[offset : offset + limit], total
 
 
 def recent_events(limit: int = 50) -> list[dict]:
-    return list_events(limit=limit)
+    events, _ = list_events(limit=limit, offset=0)
+    return events
