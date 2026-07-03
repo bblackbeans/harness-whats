@@ -52,7 +52,6 @@ export default function ClienteDetailPage() {
   const [accountIds, setAccountIds] = useState("");
   const [chatwootBotToken, setChatwootBotToken] = useState("");
   const [chatwootBotTokenPreview, setChatwootBotTokenPreview] = useState("");
-  const [handoffLabel, setHandoffLabel] = useState("Atendimento Humano");
   const [llmModelId, setLlmModelId] = useState<number | "">("");
   const [prompts, setPrompts] = useState<Record<string, string>>({});
 
@@ -74,7 +73,6 @@ export default function ClienteDetailPage() {
         setAccountIds((t.settings?.routing?.chatwoot_account_ids || []).join(", "));
         setChatwootBotToken("");
         setChatwootBotTokenPreview(t.settings?.routing?.chatwoot_bot_token_preview || "");
-        setHandoffLabel((t.settings?.handoff as { handoff_label?: string })?.handoff_label || "Atendimento Humano");
         setLlmModelId(t.settings?.model?.llm_model_id ?? "");
         setPrompts(t.prompts || {});
         setKnowledge(k.files || []);
@@ -103,9 +101,6 @@ export default function ClienteDetailPage() {
           model: {
             llm_model_id: llmModelId === "" ? null : Number(llmModelId),
             name: selected?.model_id || cliente?.settings?.model?.name,
-          },
-          handoff: {
-            handoff_label: handoffLabel.trim() || "Atendimento Humano",
           },
         },
         prompts,
@@ -235,17 +230,25 @@ export default function ClienteDetailPage() {
                 placeholder="Cole o novo token para substituir (deixe vazio para manter)"
               />
             </div>
-            <div>
-              <FieldLabel
-                label="Etiqueta de handoff (Chatwoot)"
-                help="Quando precisar de humano, o bot envia a mensagem de transferência, para de responder e aplica esta etiqueta. Crie «Atendimento Humano» em Chatwoot → Configurações → Etiquetas (uma vez por conta), ou configure CHATWOOT_ADMIN_TOKEN no servidor para criar automaticamente."
-              />
-              <input
-                className="input-field font-mono text-sm"
-                value={handoffLabel}
-                onChange={(e) => setHandoffLabel(e.target.value)}
-                placeholder="Atendimento Humano"
-              />
+            <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4 text-sm text-gray-700">
+              <p className="font-medium text-gray-900">Atendimento humano (handoff)</p>
+              <ul className="mt-2 list-inside list-disc space-y-1 text-gray-600">
+                <li>
+                  Ao pedir um atendente, o bot envia a mensagem de transferência e para de responder.
+                </li>
+                <li>
+                  A conversa recebe a etiqueta fixa{" "}
+                  <strong className="text-gray-800">Atendimento Humano</strong> no Chatwoot.
+                </li>
+                <li>
+                  Crie essa etiqueta em{" "}
+                  <strong className="text-gray-800">Chatwoot → Configurações → Etiquetas</strong>{" "}
+                  ao montar o ambiente do cliente (uma vez por conta).
+                </li>
+                <li>
+                  Depois que alguém clicar <strong className="text-gray-800">Resolver</strong>, o bot volta a atender.
+                </li>
+              </ul>
             </div>
             <div>
               <FieldLabel
