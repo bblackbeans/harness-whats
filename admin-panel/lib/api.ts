@@ -139,7 +139,8 @@ export async function reindexKnowledge(tenantId: string) {
   return request(`/admin/api/tenants/${tenantId}/knowledge/reindex`, { method: "POST" });
 }
 
-export async function usageSummary() {
+export async function usageSummary(tenantId?: string) {
+  const q = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
   return request<
     Array<{
       tenant_id: string;
@@ -147,7 +148,7 @@ export async function usageSummary() {
       tokens_total: number;
       cost_estimate: number;
     }>
-  >("/admin/api/usage/summary");
+  >(`/admin/api/usage/summary${q}`);
 }
 
 export async function usageDaily(tenantId?: string, days = 30) {

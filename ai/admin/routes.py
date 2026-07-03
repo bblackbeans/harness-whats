@@ -483,8 +483,12 @@ def ops_logs(
 
 
 @router.get("/usage/summary")
-def usage_summary(db: Session = Depends(get_db), _: AdminUser = Depends(get_current_admin)):
-    return usage_summary_by_tenant(db)
+def usage_summary(
+    tenant_id: str | None = None,
+    db: Session = Depends(get_db),
+    _: AdminUser = Depends(get_current_admin),
+):
+    return usage_summary_by_tenant(db, tenant_id=tenant_id)
 
 
 @router.get("/usage/daily")

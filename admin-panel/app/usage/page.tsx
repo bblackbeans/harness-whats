@@ -10,6 +10,7 @@ export default function UsagePage() {
   const [daily, setDaily] = useState<Array<{ date: string; calls: number; cost_estimate: number }>>([]);
   const [byModel, setByModel] = useState<Array<{ model_ref: string; calls: number; cost_estimate: number }>>([]);
   const [filterCliente, setFilterCliente] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!localStorage.getItem("access_token")) {
@@ -17,38 +18,32 @@ export default function UsagePage() {
       return;
     }
     listTenants().then(setClientes);
-    usageSummary().then(setSummary);
-    usageDaily().then(setDaily);
-    usageByModel().then(setByModel);
   }, []);
 
   useEffect(() => {
-    usageDaily(filterCliente || undefined).then(setDaily);
-    usageByModel(filterCliente || undefined).then(setByModel);
+    setLoading(true);
+    const tenantId = filterCliente || undefined;
+    Promise.all([
+      usageSummary(tenantId),
+      usageDaily(tenantId),
+      usageByModel(tenantId),
+    ])
+      .then(([s, d, m]) => {
+        setSummary(s);
+        setDaily(d);
+        setByModel(m);
+      })
+      .finally(() => setLoading(false));
   }, [filterCliente]);
 
   const totalCost = summary.reduce((s, r) => s + r.cost_estimate, 0);
   const totalCalls = summary.reduce((s, r) => s + r.calls, 0);
+  const clienteName = (id: string) => clientes.find((c) => c.id === id)?.name || id;
 
   return (
     <AppShell>
       <h1 className="mb-2 text-xl font-semibold text-gray-900 sm:text-2xl">Métricas de uso</h1>
       <p className="mb-6 text-sm text-gray-500 sm:mb-8">Consumo LLM no mês corrente</p>
-
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="card">
-          <p className="text-sm text-gray-500">Chamadas LLM (mês)</p>
-          <p className="mt-1 text-3xl font-semibold">{totalCalls}</p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Custo estimado</p>
-          <p className="mt-1 text-3xl font-semibold">${totalCost.toFixed(4)}</p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Clientes com uso</p>
-          <p className="mt-1 text-3xl font-semibold">{summary.length}</p>
-        </div>
-      </div>
 
       <div className="mb-4">
         <label className="mb-1.5 block text-sm text-gray-600 sm:mb-0 sm:mr-2 sm:inline">Filtrar cliente:</label>
@@ -66,6 +61,21 @@ export default function UsagePage() {
         </select>
       </div>
 
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="card">
+          <p className="text-sm text-gray-500">Chamadas LLM (mês)</p>
+          <p className="mt-1 text-3xl font-semibold">{loading ? "…" : totalCalls}</p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-gray-500">Custo estimado</p>
+          <p className="mt-1 text-3xl font-semibold">{loading ? "…" : `$${totalCost.toFixed(4)}`}</p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-gray-500">Clientes com uso</p>
+          <p className="mt-1 text-3xl font-semibold">{loading ? "…" : summary.length}</p>
+        </div>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card">
           <h2 className="mb-4 font-semibold">Por cliente</h2>
@@ -79,13 +89,21 @@ export default function UsagePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {summary.map((r) => (
-                <tr key={r.tenant_id}>
-                  <td className="py-2">{r.tenant_id}</td>
-                  <td className="py-2">{r.calls}</td>
-                  <td className="py-2">${r.cost_estimate.toFixed(4)}</td>
+              {summary.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="py-4 text-center text-gray-500">
+                    {loading ? "Carregando…" : "Sem uso no período"}
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                summary.map((r) => (
+                  <tr key={r.tenant_id}>
+                    <td className="py-2">{clienteName(r.tenant_id)}</td>
+                    <td className="py-2">{r.calls}</td>
+                    <td className="py-2">${r.cost_estimate.toFixed(4)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           </div>
@@ -103,13 +121,21 @@ export default function UsagePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {byModel.map((r) => (
-                <tr key={r.model_ref}>
-                  <td className="py-2">{r.model_ref}</td>
-                  <td className="py-2">{r.calls}</td>
-                  <td className="py-2">${r.cost_estimate.toFixed(4)}</td>
+              {byModel.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="py-4 text-center text-gray-500">
+                    {loading ? "Carregando…" : "Sem uso no período"}
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                byModel.map((r) => (
+                  <tr key={r.model_ref}>
+                    <td className="py-2">{r.model_ref}</td>
+                    <td className="py-2">{r.calls}</td>
+                    <td className="py-2">${r.cost_estimate.toFixed(4)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           </div>
@@ -127,13 +153,21 @@ export default function UsagePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {daily.map((r) => (
-                <tr key={r.date}>
-                  <td className="py-2">{r.date}</td>
-                  <td className="py-2">{r.calls}</td>
-                  <td className="py-2">${r.cost_estimate.toFixed(4)}</td>
+              {daily.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="py-4 text-center text-gray-500">
+                    {loading ? "Carregando…" : "Sem uso no período"}
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                daily.map((r) => (
+                  <tr key={r.date}>
+                    <td className="py-2">{r.date}</td>
+                    <td className="py-2">{r.calls}</td>
+                    <td className="py-2">${r.cost_estimate.toFixed(4)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           </div>

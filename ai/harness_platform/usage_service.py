@@ -65,9 +65,9 @@ def tenant_usage_month(db: Session, tenant_id: str) -> dict:
     }
 
 
-def usage_summary_by_tenant(db: Session) -> list[dict]:
+def usage_summary_by_tenant(db: Session, *, tenant_id: str | None = None) -> list[dict]:
     since = _month_start()
-    rows = (
+    query = (
         db.query(
             UsageEvent.tenant_id,
             func.count(UsageEvent.id),
@@ -76,9 +76,10 @@ def usage_summary_by_tenant(db: Session) -> list[dict]:
             func.sum(UsageEvent.cost_estimate),
         )
         .filter(UsageEvent.created_at >= since)
-        .group_by(UsageEvent.tenant_id)
-        .all()
     )
+    if tenant_id:
+        query = query.filter(UsageEvent.tenant_id == tenant_id)
+    rows = query.group_by(UsageEvent.tenant_id).all()
     return [
         {
             "tenant_id": tenant_id,
