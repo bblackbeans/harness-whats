@@ -107,3 +107,18 @@ export async function portalDeleteKnowledge(filename: string) {
 export async function portalReindexKnowledge() {
   return portalRequest("/portal/api/knowledge/reindex", { method: "POST" });
 }
+
+export type ProblemaFeedbackPayload = {
+  titulo: string;
+  descricao: string;
+  passos?: string;
+  correlation_id?: string;
+  contexto?: Record<string, unknown>;
+};
+
+export async function portalReportProblem(payload: ProblemaFeedbackPayload) {
+  return portalRequest<{ id: string; correlation_id: string }>("/portal/api/problemas/feedback", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

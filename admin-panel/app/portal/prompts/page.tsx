@@ -60,13 +60,14 @@ export default function PortalPromptsPage() {
     <PortalShell>
       <h1 className="mb-2 text-xl font-semibold text-gray-900 sm:text-2xl">Prompts</h1>
       <p className="mb-6 text-sm text-gray-500">
-        Instruções que definem como o assistente virtual se comporta nas conversas.
+        Instruções que definem como o seu chatbot responde nas conversas.
       </p>
 
-      <PortalGuide title="O que são prompts?" className="mb-6">
+      <PortalGuide title="Como personalizar as respostas" className="mb-6">
         <p>
-          São textos de orientação para a inteligência artificial. O prompt <strong>Agente</strong> é
-          o mais importante no dia a dia — descreva quem é o bot e como ele deve responder.
+          Os prompts orientam a inteligência artificial do seu chatbot. O prompt{" "}
+          <strong>Agente</strong> é o principal — descreva quem é o bot, o tom de voz e o que ele
+          pode ou não responder.
         </p>
         <p className="text-gray-600">
           Escreva em português claro, como se estivesse treinando um atendente. Não é necessário

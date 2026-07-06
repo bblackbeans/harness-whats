@@ -50,9 +50,9 @@ export const PORTAL_KNOWLEDGE_INTRO = {
 
 export const PORTAL_DASHBOARD_GUIDE = {
   howItWorks: [
-    { label: "Prompts", text: "Defina como o bot fala e se comporta." },
-    { label: "Conhecimento", text: "Envie FAQs e materiais que o bot usa para responder." },
-    { label: "Atendimento", text: "Mensagens chegam pelo Chatwoot (WhatsApp, Telegram, etc.)." },
+    { label: "Prompts", text: "Defina como o chatbot fala e se comporta nas conversas." },
+    { label: "Conhecimento", text: "Envie FAQs e materiais que o bot consulta antes de responder." },
+    { label: "Atendimento", text: "Mensagens chegam pelos canais conectados (WhatsApp, Telegram, etc.)." },
     { label: "Humano", text: "Se o cliente pedir atendente, o bot transfere e para de responder." },
   ],
 };

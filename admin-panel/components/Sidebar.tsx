@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Cpu, LayoutDashboard, ScrollText, Users } from "lucide-react";
+import { BarChart3, Cpu, LayoutDashboard, ScrollText, Users, AlertTriangle } from "lucide-react";
 import { ResponsiveShell, type NavSection } from "@/components/ResponsiveShell";
 
 const navSections: NavSection[] = [
@@ -20,6 +20,12 @@ const navSections: NavSection[] = [
         label: "Logs",
         icon: ScrollText,
         match: (p) => p === "/logs",
+      },
+      {
+        href: "/problemas",
+        label: "Problemas",
+        icon: AlertTriangle,
+        match: (p) => p === "/problemas" || p.startsWith("/problemas/"),
       },
     ],
   },

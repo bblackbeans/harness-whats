@@ -343,8 +343,8 @@ export default function ClienteDetailPage() {
             <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-4">
               <p className="text-sm text-gray-700">
                 O cliente acessa o portal em{" "}
-                <code className="rounded bg-white px-1 text-xs">/portal/login</code> para editar prompts,
-                documentos e ver métricas.
+                <code className="rounded bg-white px-1 text-xs">/portal/login</code> para gerenciar
+                prompts, base de conhecimento e acompanhar o uso do chatbot.
               </p>
             </div>
             {portalUsers.length === 0 ? (

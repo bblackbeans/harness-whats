@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -148,3 +149,29 @@ class ModelChangeRequest(Base):
     reviewed_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Problema(Base):
+    __tablename__ = "problemas"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str] = mapped_column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"))
+    usuario_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("tenant_users.id", ondelete="SET NULL"), nullable=True
+    )
+    titulo: Mapped[str] = mapped_column(String(200), nullable=False)
+    descricao: Mapped[str] = mapped_column(Text, nullable=False)
+    passos: Mapped[str] = mapped_column(Text, default="")
+    origem: Mapped[str] = mapped_column(String(32), default="feedback")
+    status: Mapped[str] = mapped_column(String(32), default="novo")
+    url: Mapped[str] = mapped_column(String(2048), default="")
+    correlation_id: Mapped[str] = mapped_column(String(36), default=lambda: str(uuid.uuid4()))
+    contexto_json: Mapped[dict] = mapped_column(JSONB, default=dict)
+    notas_internas: Mapped[str] = mapped_column(Text, default="")
+    criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    atualizado_em: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    tenant: Mapped["Tenant"] = relationship()
+    usuario: Mapped["TenantUser | None"] = relationship()

@@ -6,7 +6,8 @@ from harness_platform.db import get_db
 from harness_platform.knowledge_service import delete_knowledge_file, list_knowledge_files, save_knowledge_file
 from harness_platform.models import TenantUser
 from harness_platform.portal_service import authenticate_tenant_user
-from harness_platform.schemas import LoginRequest, PromptUpdate
+from harness_platform.schemas import LoginRequest, PromptUpdate, ProblemaFeedbackCreate, ProblemaFeedbackResponse
+from harness_platform.problema_service import create_problema_feedback, feedback_enabled
 from harness_platform.tenant_service import (
     PROMPT_NAMES,
     get_tenant_db,
@@ -128,3 +129,15 @@ def portal_knowledge_reindex(user: TenantUser = Depends(get_current_tenant_user)
         raise HTTPException(status_code=404, detail="Tenant não encontrado")
     config = tenant_to_config(tenant)
     return sync_tenant_index(config)
+
+
+@router.post("/problemas/feedback", status_code=status.HTTP_201_CREATED, response_model=ProblemaFeedbackResponse)
+def portal_problema_feedback(
+    body: ProblemaFeedbackCreate,
+    user: TenantUser = Depends(get_current_tenant_user),
+    db: Session = Depends(get_db),
+):
+    if not feedback_enabled():
+        raise HTTPException(status_code=503, detail="Reporte de problemas desabilitado")
+    problema = create_problema_feedback(db, user=user, body=body)
+    return ProblemaFeedbackResponse(id=problema.id, correlation_id=problema.correlation_id)

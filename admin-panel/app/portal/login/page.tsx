@@ -46,7 +46,9 @@ export default function PortalLoginPage() {
             H
           </div>
           <h1 className="text-2xl font-semibold text-gray-900">Portal do Cliente</h1>
-          <p className="mt-1 text-sm text-gray-500">Gerencie prompts, conhecimento e métricas</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Personalize como seu chatbot responde e o conteúdo que ele usa nas conversas
+          </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           <div>

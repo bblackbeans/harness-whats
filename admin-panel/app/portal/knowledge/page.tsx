@@ -60,7 +60,9 @@ export default function PortalKnowledgePage() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Base de conhecimento</h1>
-          <p className="mt-1 text-sm text-gray-500">Materiais que o bot consulta antes de responder.</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Materiais que o seu chatbot consulta antes de responder aos clientes.
+          </p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto">
           <div className="flex items-center justify-end gap-1">

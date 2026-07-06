@@ -18,7 +18,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   return (
     <ResponsiveShell
       title="Portal do Cliente"
-      subtitle="Self-service"
+      subtitle="Gerencie seu chatbot"
       navSections={navSections}
       onLogout={() => {
         localStorage.removeItem("portal_access_token");

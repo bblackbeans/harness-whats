@@ -209,8 +209,8 @@ export default function NovoClientePage() {
           <>
             <p className="text-sm text-gray-600">
               Credenciais para o cliente acessar o portal em{" "}
-              <code className="rounded bg-gray-100 px-1 text-xs">/portal/login</code> e editar prompts,
-              documentos e métricas.
+              <code className="rounded bg-gray-100 px-1 text-xs">/portal/login</code> e gerenciar
+              prompts, base de conhecimento e uso do chatbot.
             </p>
             <div>
               <FieldLabel label="Nome do responsável" help="Nome da pessoa que acessará o portal. Opcional." />

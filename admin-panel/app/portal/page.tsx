@@ -109,14 +109,10 @@ export default function PortalDashboardPage() {
 
           <PortalGuide title="O que você pode fazer aqui" className="mb-6">
             <p>
-              Este portal é o self-service da sua conta. Use <strong>Prompts</strong> para definir o
-              comportamento do assistente e <strong>Conhecimento</strong> para alimentar as respostas
-              com dados reais da empresa.
-            </p>
-            <p className="text-gray-600">
-              O bot atende automaticamente nos canais conectados (WhatsApp, Telegram, etc.). Se o
-              cliente pedir um humano, a conversa é transferida e o bot para até o atendente
-              finalizar.
+              Aqui você gerencia o <strong>conteúdo do seu chatbot</strong>: em{" "}
+              <strong>Prompts</strong>, define como ele fala e se comporta; em{" "}
+              <strong>Conhecimento</strong>, envia FAQs e materiais que ele usa para responder com
+              informação da sua empresa.
             </p>
           </PortalGuide>
 
@@ -126,7 +122,7 @@ export default function PortalDashboardPage() {
               label: item.label,
               text: item.text,
             }))}
-            footer="Dúvidas sobre configuração técnica (Chatwoot, canais, token)? Fale com o administrador da plataforma."
+            footer="Dúvidas sobre canais (WhatsApp, Telegram) ou integração técnica? Fale com o administrador da plataforma."
           />
         </>
       )}

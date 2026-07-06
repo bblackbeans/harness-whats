@@ -162,3 +162,45 @@ class TenantUserCreate(BaseModel):
 class ModelChangeRequestCreate(BaseModel):
     requested_model_id: int
     reason: str = ""
+
+
+class ProblemaFeedbackCreate(BaseModel):
+    titulo: str = Field(..., min_length=1, max_length=200)
+    descricao: str = Field(..., min_length=1, max_length=8000)
+    passos: str = Field(default="", max_length=8000)
+    correlation_id: str | None = None
+    contexto: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProblemaUpdate(BaseModel):
+    status: str | None = None
+    notas_internas: str | None = None
+
+
+class ProblemaResponse(BaseModel):
+    id: str
+    tenant_id: str
+    tenant_name: str = ""
+    usuario_id: int | None = None
+    usuario_email: str = ""
+    usuario_name: str = ""
+    titulo: str
+    descricao: str
+    passos: str
+    origem: str
+    status: str
+    url: str
+    correlation_id: str
+    contexto_json: dict[str, Any]
+    notas_internas: str
+    criado_em: str
+    atualizado_em: str
+    tem_screenshot: bool = False
+    tem_gravacao: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+class ProblemaFeedbackResponse(BaseModel):
+    id: str
+    correlation_id: str

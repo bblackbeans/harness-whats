@@ -21,6 +21,8 @@ from harness_platform.schemas import (
     TenantUpdate,
     TenantUserCreate,
     TokenResponse,
+    ProblemaUpdate,
+    ProblemaResponse,
 )
 from harness_platform.plan_service import (
     assign_plan,
@@ -74,6 +76,7 @@ from harness_platform.portal_service import (
     list_tenant_users,
     reject_model_change_request,
 )
+from harness_platform.problema_service import delete_problema, get_problema, list_problemas, update_problema
 from knowledge import sync_tenant_index
 from tenants.registry import reload_tenants
 
@@ -705,3 +708,73 @@ def model_requests_reject(
         detail=str(request_id),
     )
     return {"ok": True, "status": req.status}
+
+
+@router.get("/problemas")
+def problemas_list(
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin),
+    tenant_id: str | None = Query(None),
+    status: str | None = Query(None, alias="status"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    return list_problemas(
+        db,
+        tenant_id=tenant_id,
+        status_filter=status,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/problemas/{problema_id}", response_model=ProblemaResponse)
+def problemas_get(
+    problema_id: str,
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin),
+):
+    data = get_problema(db, problema_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Problema não encontrado")
+    return data
+
+
+@router.patch("/problemas/{problema_id}", response_model=ProblemaResponse)
+def problemas_update(
+    problema_id: str,
+    body: ProblemaUpdate,
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin),
+):
+    data = update_problema(db, problema_id, body)
+    if not data:
+        raise HTTPException(status_code=404, detail="Problema não encontrado")
+    if body.status:
+        log_audit(
+            db,
+            admin_email=admin.email,
+            action="problema.update_status",
+            tenant_id=data.get("tenant_id"),
+            detail=f"{problema_id}:{body.status}",
+        )
+    return data
+
+
+@router.delete("/problemas/{problema_id}", status_code=status.HTTP_204_NO_CONTENT)
+def problemas_delete(
+    problema_id: str,
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin),
+):
+    snapshot = delete_problema(db, problema_id)
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Problema não encontrado")
+    log_audit(
+        db,
+        admin_email=admin.email,
+        action="problema.delete",
+        tenant_id=snapshot.get("tenant_id"),
+        detail=f"{problema_id}:{snapshot.get('titulo', '')}",
+    )
+    return None

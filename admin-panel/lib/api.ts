@@ -326,3 +326,57 @@ export async function approveModelChangeRequest(id: number) {
 export async function rejectModelChangeRequest(id: number) {
   return request(`/admin/api/model-requests/${id}/reject`, { method: "POST" });
 }
+
+export type Problema = {
+  id: string;
+  tenant_id: string;
+  tenant_name: string;
+  usuario_id: number | null;
+  usuario_email: string;
+  usuario_name: string;
+  titulo: string;
+  descricao: string;
+  passos: string;
+  origem: string;
+  status: string;
+  url: string;
+  correlation_id: string;
+  contexto_json: Record<string, unknown>;
+  notas_internas: string;
+  criado_em: string;
+  atualizado_em: string;
+  tem_screenshot: boolean;
+  tem_gravacao: boolean;
+};
+
+export async function listProblemas(params?: {
+  page?: number;
+  pageSize?: number;
+  tenantId?: string;
+  status?: string;
+}) {
+  const q = new URLSearchParams({
+    page: String(params?.page ?? 1),
+    page_size: String(params?.pageSize ?? 20),
+  });
+  if (params?.tenantId) q.set("tenant_id", params.tenantId);
+  if (params?.status) q.set("status", params.status);
+  return request<{ items: Problema[]; total: number; page: number; page_size: number }>(
+    `/admin/api/problemas?${q}`
+  );
+}
+
+export async function getProblema(id: string) {
+  return request<Problema>(`/admin/api/problemas/${id}`);
+}
+
+export async function updateProblema(id: string, data: { status?: string; notas_internas?: string }) {
+  return request<Problema>(`/admin/api/problemas/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteProblema(id: string) {
+  return request(`/admin/api/problemas/${id}`, { method: "DELETE" });
+}
