@@ -1,14 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PortalActionCard, PortalGuide, PortalLegend } from "@/components/PortalGuide";
 import { PortalShell } from "@/components/PortalShell";
-import { portalMe, portalUsage } from "@/lib/portal-api";
+import { PORTAL_DASHBOARD_GUIDE } from "@/lib/portal-help";
+import { portalListKnowledge, portalMe, portalUsage } from "@/lib/portal-api";
 
 export default function PortalDashboardPage() {
   const [name, setName] = useState("");
   const [tenantName, setTenantName] = useState("");
   const [model, setModel] = useState("");
+  const [docCount, setDocCount] = useState(0);
   const [usage, setUsage] = useState<{ calls: number; cost_estimate: number; tokens_total: number } | null>(null);
+  const [planName, setPlanName] = useState("");
   const [exceeded, setExceeded] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -18,17 +23,21 @@ export default function PortalDashboardPage() {
       window.location.href = "/portal/login";
       return;
     }
-    Promise.all([portalMe(), portalUsage()])
-      .then(([me, u]) => {
+    Promise.all([portalMe(), portalUsage(), portalListKnowledge().catch(() => ({ files: [] }))])
+      .then(([me, u, k]) => {
         setName(me.name);
         setTenantName(me.tenant.name);
         setModel(me.tenant.settings?.model?.name || "—");
+        setDocCount(k.files?.length ?? 0);
         setUsage(u.usage);
+        setPlanName(u.limits.plan?.name || "");
         setExceeded(u.limits.exceeded);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const costBrl = ((usage?.cost_estimate ?? 0) * 5.8).toFixed(4);
 
   return (
     <PortalShell>
@@ -41,31 +50,92 @@ export default function PortalDashboardPage() {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {!loading && !error && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="card">
-            <p className="text-sm text-gray-500">Modelo atual</p>
-            <p className="mt-1 text-xl font-semibold text-gray-900">{model}</p>
-            <p className="mt-2 text-xs text-gray-400">
-              Alterações de modelo são feitas pelo administrador da plataforma.
+        <>
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="card">
+              <p className="text-sm text-gray-500">Modelo de IA</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900">{model}</p>
+              <p className="mt-2 text-xs text-gray-400">
+                Definido pelo administrador da plataforma.
+              </p>
+            </div>
+            <div className="card">
+              <p className="text-sm text-gray-500">Chamadas (mês)</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900">{usage?.calls ?? 0}</p>
+              <p className="mt-2 text-xs text-gray-400">
+                Cada resposta do bot conta como uma chamada.
+              </p>
+            </div>
+            <div className="card">
+              <p className="text-sm text-gray-500">Custo estimado</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900">
+                ${(usage?.cost_estimate ?? 0).toFixed(4)}
+              </p>
+              <p className="mt-2 text-xs text-gray-400">≈ R$ {costBrl} (cotação ~R$ 5,80)</p>
+            </div>
+            <div className="card">
+              <p className="text-sm text-gray-500">Documentos na base</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900">{docCount}</p>
+              <p className="mt-2 text-xs text-gray-400">
+                {docCount === 0 ? (
+                  <Link href="/portal/knowledge" className="text-brand-600 hover:underline">
+                    Envie seu primeiro FAQ →
+                  </Link>
+                ) : (
+                  "Arquivos .md ou .txt indexados para o bot."
+                )}
+              </p>
+            </div>
+          </div>
+
+          {planName && (
+            <p className="mb-6 text-sm text-gray-500">
+              Plano atual: <span className="font-medium text-gray-700">{planName}</span>
             </p>
+          )}
+
+          <div className="mb-6 grid gap-4 sm:grid-cols-2">
+            <PortalActionCard
+              href="/portal/prompts"
+              title="Personalizar prompts"
+              description="Ajuste como o bot fala, o tom e as regras de atendimento."
+            />
+            <PortalActionCard
+              href="/portal/knowledge"
+              title="Base de conhecimento"
+              description="Envie FAQs e materiais para o bot responder com informação da sua empresa."
+            />
           </div>
-          <div className="card">
-            <p className="text-sm text-gray-500">Chamadas (mês)</p>
-            <p className="mt-1 text-xl font-semibold text-gray-900">{usage?.calls ?? 0}</p>
-          </div>
-          <div className="card">
-            <p className="text-sm text-gray-500">Custo estimado</p>
-            <p className="mt-1 text-xl font-semibold text-gray-900">
-              ${(usage?.cost_estimate ?? 0).toFixed(4)}
+
+          <PortalGuide title="O que você pode fazer aqui" className="mb-6">
+            <p>
+              Este portal é o self-service da sua conta. Use <strong>Prompts</strong> para definir o
+              comportamento do assistente e <strong>Conhecimento</strong> para alimentar as respostas
+              com dados reais da empresa.
             </p>
-          </div>
-        </div>
+            <p className="text-gray-600">
+              O bot atende automaticamente nos canais conectados (WhatsApp, Telegram, etc.). Se o
+              cliente pedir um humano, a conversa é transferida e o bot para até o atendente
+              finalizar.
+            </p>
+          </PortalGuide>
+
+          <PortalLegend
+            items={PORTAL_DASHBOARD_GUIDE.howItWorks.map((item) => ({
+              color: "blue",
+              label: item.label,
+              text: item.text,
+            }))}
+            footer="Dúvidas sobre configuração técnica (Chatwoot, canais, token)? Fale com o administrador da plataforma."
+          />
+        </>
       )}
 
       {exceeded && (
-        <div className="card mt-6">
-          <p className="text-sm text-amber-700">
-            Limite de uso atingido. Entre em contato com o suporte.
+        <div className="card mt-6 border-amber-200 bg-amber-50">
+          <p className="text-sm text-amber-800">
+            <strong>Limite de uso atingido.</strong> O bot pode parar de responder até o
+            administrador ajustar o plano. Entre em contato com o suporte.
           </p>
         </div>
       )}
