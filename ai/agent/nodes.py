@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -465,13 +465,9 @@ def run_agent(state: HarnessState) -> HarnessState:
         (state.get("agent_system_prompt") or "").strip()
         or load_prompt(tenant, "agent_system", _DEFAULT_AGENT_PROMPT)
     )
+    # Instruções JSON vão no SystemMessage direto (sem ChatPromptTemplate),
+    # senão chaves {cpf}/{agent_id}/… quebram o template do LangChain.
     system_prompt = persona_prompt + _AGENT_JSON_INSTRUCTIONS
-    agent_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system_prompt),
-            ("human", "{context}"),
-        ]
-    )
 
     if not llm:
         logger.error("LLM indisponível para tenant=%s", tenant.id)
@@ -494,11 +490,18 @@ def run_agent(state: HarnessState) -> HarnessState:
             "new_semantic_facts": [],
         }
 
-    chain = agent_prompt | llm | JsonOutputParser()
     context_text = state.get("agent_context", text)
     model_ref = tenant.model.name
+    messages = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=context_text),
+    ]
+    parser = JsonOutputParser()
     try:
-        result = chain.invoke({"context": context_text})
+        raw = llm.invoke(messages)
+        result = parser.invoke(raw)
+        if not isinstance(result, dict):
+            raise ValueError(f"Resposta do agente não é objeto JSON: {type(result)}")
         reply_text = str(result.get("reply") or "")
         log_llm_usage(
             tenant,
@@ -513,7 +516,7 @@ def run_agent(state: HarnessState) -> HarnessState:
             error,
         )
         try:
-            raw = (agent_prompt | llm).invoke({"context": context_text})
+            raw = llm.invoke(messages)
             content = str(getattr(raw, "content", raw)).strip()
             result = {
                 "intent": "other",
