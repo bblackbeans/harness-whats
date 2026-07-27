@@ -9,6 +9,7 @@ class HarnessState(TypedDict):
     tenant_id: str
     phone: str
     contact_name: str
+    chatwoot_contact_id: int | None
     conversation_id: int
     account_id: int
     inbox_id: int | None

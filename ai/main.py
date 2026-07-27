@@ -389,6 +389,7 @@ async def chatwoot_webhook(request: Request, background_tasks: BackgroundTasks):
         account_id=inbound["account_id"],
         inbox_id=inbound.get("inbox_id"),
         contact_name=inbound.get("contact_name", ""),
+        chatwoot_contact_id=inbound.get("chatwoot_contact_id"),
         message_id=inbound.get("message_id", ""),
         delivery_id=delivery_id,
         conversation_status=inbound.get("conversation_status", ""),

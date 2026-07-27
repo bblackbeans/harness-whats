@@ -83,20 +83,135 @@ def _conversation_id(payload: dict) -> int | None:
     return None
 
 
-def _contact_phone(payload: dict) -> str:
+def _contact_blobs(payload: dict) -> list[dict]:
+    """Coleta objetos de contato/sender em vários formatos do webhook Chatwoot."""
     conversation = payload.get("conversation") or {}
-    contact = payload.get("contact") or conversation.get("contact") or {}
-    for key in ("phone_number", "identifier"):
-        value = contact.get(key)
-        if value:
-            return normalize_phone(str(value))
+    meta = conversation.get("meta") if isinstance(conversation.get("meta"), dict) else {}
+    message = payload.get("message") if isinstance(payload.get("message"), dict) else {}
+    blobs: list[dict] = []
+    for item in (
+        payload.get("contact"),
+        conversation.get("contact"),
+        payload.get("sender"),
+        message.get("sender"),
+        meta.get("sender"),
+    ):
+        if isinstance(item, dict) and item:
+            blobs.append(item)
+    return blobs
+
+
+def _contact_chatwoot_id(payload: dict) -> int | None:
+    for blob in _contact_blobs(payload):
+        if blob.get("id") is not None:
+            try:
+                return int(blob["id"])
+            except (TypeError, ValueError):
+                continue
+    return None
+
+
+def _digits(value: object) -> str:
+    return normalize_phone(str(value)) if value else ""
+
+
+def _looks_like_whatsapp_jid(value: str) -> bool:
+    lower = value.lower()
+    return "@s.whatsapp.net" in lower or "@c.us" in lower or "@g.us" in lower
+
+
+def _looks_like_e164_phone(digits: str) -> bool:
+    """Heurística: telefone internacional (10–15 dígitos), não ID curto de rede social."""
+    return 10 <= len(digits) <= 15
+
+
+def _phone_from_blob(blob: dict) -> str:
+    """Extrai telefone real quando o canal envia (WhatsApp). Telegram em geral não tem."""
+    attrs = blob.get("additional_attributes") if isinstance(blob.get("additional_attributes"), dict) else {}
+    custom = blob.get("custom_attributes") if isinstance(blob.get("custom_attributes"), dict) else {}
+
+    # 1) Campos explícitos de telefone
+    for value in (
+        blob.get("phone_number"),
+        attrs.get("phone_number"),
+        attrs.get("phone"),
+        attrs.get("whatsapp_id"),
+        custom.get("phone_number"),
+        custom.get("phone"),
+        custom.get("telefone"),
+    ):
+        digits = _digits(value)
+        if len(digits) >= 8:
+            return digits
+
+    # 2) Identifier só se for claramente WhatsApp / E.164
+    for value in (blob.get("identifier"), blob.get("source_id"), attrs.get("id")):
+        if not value:
+            continue
+        text = str(value)
+        digits = _digits(text)
+        if _looks_like_whatsapp_jid(text) and len(digits) >= 8:
+            return digits
+        if _looks_like_e164_phone(digits) and (
+            text.strip().startswith("+") or digits.startswith("55") or len(digits) >= 11
+        ):
+            return digits
+    return ""
+
+
+def _channel_identity_from_blob(blob: dict) -> str:
+    """Chave estável quando não há telefone (Telegram, API, etc.)."""
+    attrs = blob.get("additional_attributes") if isinstance(blob.get("additional_attributes"), dict) else {}
+    for value in (
+        blob.get("identifier"),
+        blob.get("source_id"),
+        attrs.get("social_telegram_user_id"),
+        attrs.get("telegram_id"),
+        attrs.get("id"),
+    ):
+        if not value:
+            continue
+        digits = _digits(value)
+        if digits:
+            return f"tg{digits}"[:32]
+        cleaned = re.sub(r"[^a-zA-Z0-9]", "", str(value))
+        if cleaned:
+            return f"id{cleaned}"[:32]
+    if blob.get("id") is not None:
+        try:
+            return f"cw{int(blob['id'])}"
+        except (TypeError, ValueError):
+            pass
+    return ""
+
+
+def _contact_phone(payload: dict) -> str:
+    """Telefone real (WhatsApp) ou identidade sintética (Telegram/sem número).
+
+    Sempre tenta devolver uma chave não vazia para o CRM conseguir upsert automático.
+    """
+    for blob in _contact_blobs(payload):
+        phone = _phone_from_blob(blob)
+        if phone:
+            return phone
+
+    for blob in _contact_blobs(payload):
+        identity = _channel_identity_from_blob(blob)
+        if identity:
+            return identity
+
+    conversation_id = _conversation_id(payload)
+    if conversation_id is not None:
+        return f"conv{conversation_id}"
     return ""
 
 
 def _contact_name(payload: dict) -> str:
-    conversation = payload.get("conversation") or {}
-    contact = payload.get("contact") or conversation.get("contact") or {}
-    return str(contact.get("name") or "")
+    for blob in _contact_blobs(payload):
+        name = str(blob.get("name") or "").strip()
+        if name:
+            return name
+    return ""
 
 
 def _message_type(payload: dict) -> str:
@@ -239,6 +354,7 @@ def extract_inbound_message(payload: dict, *, handoff_label: str | None = None) 
     return {
         "phone": _contact_phone(payload),
         "contact_name": _contact_name(payload),
+        "chatwoot_contact_id": _contact_chatwoot_id(payload),
         "text": content,
         "conversation_id": conversation_id,
         "account_id": account_id,

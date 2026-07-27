@@ -9,6 +9,7 @@ class InboundEvent:
     account_id: int
     inbox_id: int | None = None
     contact_name: str = ""
+    chatwoot_contact_id: int | None = None
     message_id: str = ""
     delivery_id: str = ""
     conversation_status: str = ""

@@ -11,6 +11,7 @@ def _initial_state(event: InboundEvent) -> HarnessState:
         "tenant_id": tenant.id,
         "phone": event.phone,
         "contact_name": event.contact_name,
+        "chatwoot_contact_id": event.chatwoot_contact_id,
         "conversation_id": event.conversation_id,
         "account_id": event.account_id,
         "inbox_id": event.inbox_id,

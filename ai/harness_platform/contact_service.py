@@ -155,6 +155,18 @@ def get_contact_by_phone(db: Session, tenant_id: str, phone: str) -> dict | None
     return contact_to_dict(row) if row else None
 
 
+def get_contact_by_chatwoot_id(db: Session, tenant_id: str, chatwoot_contact_id: int) -> dict | None:
+    row = (
+        db.query(ContactProfile)
+        .filter(
+            ContactProfile.tenant_id == tenant_id,
+            ContactProfile.chatwoot_contact_id == int(chatwoot_contact_id),
+        )
+        .first()
+    )
+    return contact_to_dict(row) if row else None
+
+
 def upsert_contact(
     db: Session,
     tenant_id: str,
@@ -168,6 +180,9 @@ def upsert_contact(
     merge_fields: bool = True,
 ) -> dict:
     normalized = normalize_phone(phone)
+    if not normalized and chatwoot_contact_id is not None:
+        # Telegram / canal sem número: ainda permite chave via id Chatwoot
+        normalized = f"cw{int(chatwoot_contact_id)}"
     if not normalized:
         raise ValueError("Telefone obrigatório")
 
@@ -176,9 +191,31 @@ def upsert_contact(
         .filter(ContactProfile.tenant_id == tenant_id, ContactProfile.phone == normalized)
         .first()
     )
+    if not row and chatwoot_contact_id is not None:
+        row = (
+            db.query(ContactProfile)
+            .filter(
+                ContactProfile.tenant_id == tenant_id,
+                ContactProfile.chatwoot_contact_id == int(chatwoot_contact_id),
+            )
+            .first()
+        )
     if not row:
         row = ContactProfile(tenant_id=tenant_id, phone=normalized, fields={})
         db.add(row)
+    elif row.phone != normalized and normalize_phone(phone):
+        # Atualiza chave se descobrimos telefone real depois
+        clash = (
+            db.query(ContactProfile)
+            .filter(
+                ContactProfile.tenant_id == tenant_id,
+                ContactProfile.phone == normalized,
+                ContactProfile.id != row.id,
+            )
+            .first()
+        )
+        if not clash:
+            row.phone = normalized
 
     if name is not None and str(name).strip():
         row.name = str(name).strip()
@@ -257,7 +294,15 @@ def delete_contact(db: Session, tenant_id: str, contact_id: int) -> None:
     db.commit()
 
 
-def save_contact_fields(db: Session, tenant_id: str, phone: str, updates: dict[str, Any]) -> dict | None:
+def save_contact_fields(
+    db: Session,
+    tenant_id: str,
+    phone: str,
+    updates: dict[str, Any],
+    *,
+    chatwoot_contact_id: int | None = None,
+    last_conversation_id: int | None = None,
+) -> dict | None:
     """Persiste campos estruturados a partir da IA (tool save_contact_fields)."""
     if not updates:
         return get_contact_by_phone(db, tenant_id, phone)
@@ -273,4 +318,6 @@ def save_contact_fields(db: Session, tenant_id: str, phone: str, updates: dict[s
         name=name,
         email=email,
         fields=updates or None,
+        chatwoot_contact_id=chatwoot_contact_id,
+        last_conversation_id=last_conversation_id,
     )

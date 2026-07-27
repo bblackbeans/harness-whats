@@ -151,7 +151,11 @@ def load_semantic_memory(state: HarnessState) -> HarnessState:
     db = SessionLocal()
     try:
         profile = get_contact_by_phone(db, tenant.id, state["phone"]) or {}
-        if not profile and (state.get("contact_name") or state.get("phone")):
+        if not profile and state.get("chatwoot_contact_id"):
+            from harness_platform.contact_service import get_contact_by_chatwoot_id
+
+            profile = get_contact_by_chatwoot_id(db, tenant.id, int(state["chatwoot_contact_id"])) or {}
+        if not profile and (state.get("contact_name") or state.get("phone") or state.get("chatwoot_contact_id")):
             from harness_platform.contact_service import upsert_contact
 
             try:
@@ -160,18 +164,21 @@ def load_semantic_memory(state: HarnessState) -> HarnessState:
                     tenant.id,
                     state["phone"],
                     name=state.get("contact_name") or "",
+                    chatwoot_contact_id=state.get("chatwoot_contact_id"),
                     last_conversation_id=state.get("conversation_id"),
                 )
             except ValueError:
                 profile = {}
-        elif profile and state.get("conversation_id"):
+        elif profile and (state.get("conversation_id") or state.get("contact_name")):
             from harness_platform.contact_service import upsert_contact
 
             try:
                 profile = upsert_contact(
                     db,
                     tenant.id,
-                    state["phone"],
+                    state["phone"] or profile.get("phone") or "",
+                    name=state.get("contact_name") or None,
+                    chatwoot_contact_id=state.get("chatwoot_contact_id"),
                     last_conversation_id=state.get("conversation_id"),
                 )
             except ValueError:
@@ -636,11 +643,23 @@ def persist_contact_and_tools(state: HarnessState) -> HarnessState:
     db = SessionLocal()
     try:
         if updates:
-            saved = save_contact_fields(db, tenant.id, state["phone"], dict(updates))
-            if saved:
-                profile = saved
             keys = ", ".join(sorted(str(k) for k in updates.keys()))
-            _record_ops(state, Lifecycle.TOOL_EXECUTED, f"Salvar campos: {keys}")
+            try:
+                phone_key = state.get("phone") or (profile.get("phone") if profile else "") or ""
+                saved = save_contact_fields(
+                    db,
+                    tenant.id,
+                    phone_key,
+                    dict(updates),
+                    chatwoot_contact_id=state.get("chatwoot_contact_id"),
+                    last_conversation_id=state.get("conversation_id"),
+                )
+                if saved:
+                    profile = saved
+                _record_ops(state, Lifecycle.TOOL_EXECUTED, f"Salvar campos: {keys}")
+            except ValueError as err:
+                # Sem telefone no webhook: não derruba o turno inteiro
+                _record_ops(state, Lifecycle.FAILED, f"Salvar campos ({keys}): {err}")
 
         # Transferência entre agentes / volta ao orquestrador
         conv_id = state.get("conversation_id")
