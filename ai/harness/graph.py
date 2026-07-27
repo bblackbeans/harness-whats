@@ -24,6 +24,13 @@ def _route_after_reply(state: HarnessState) -> str:
     return END
 
 
+def _route_after_persist_contact(state: HarnessState) -> str:
+    """Após transferir, reexecuta o agente destino no mesmo turno."""
+    if state.get("transfer_rerun"):
+        return "manage_context"
+    return "persist_memory"
+
+
 def _route_after_persist(state: HarnessState) -> str:
     if state.get("should_reply") and state.get("outbound_text"):
         return "send_reply"
@@ -53,7 +60,11 @@ def build_graph():
     builder.add_edge("manage_context", "retrieve_knowledge")
     builder.add_edge("retrieve_knowledge", "agent")
     builder.add_edge("agent", "persist_contact")
-    builder.add_edge("persist_contact", "persist_memory")
+    builder.add_conditional_edges(
+        "persist_contact",
+        _route_after_persist_contact,
+        {"manage_context": "manage_context", "persist_memory": "persist_memory"},
+    )
     builder.add_conditional_edges(
         "persist_memory",
         _route_after_persist,

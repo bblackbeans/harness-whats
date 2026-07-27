@@ -37,6 +37,8 @@ class HarnessState(TypedDict):
     allowed_tools: dict
     transfer_to_agent: object
     return_to_orchestrator: bool
+    transfer_rerun: bool
+    transfer_depth: int
     agent_context: str
     retrieved_knowledge: list[str]
     handoff_to_human: bool

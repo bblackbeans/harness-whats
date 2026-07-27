@@ -39,6 +39,8 @@ def _initial_state(event: InboundEvent) -> HarnessState:
         "allowed_tools": {},
         "transfer_to_agent": None,
         "return_to_orchestrator": False,
+        "transfer_rerun": False,
+        "transfer_depth": 0,
         "agent_context": "",
         "retrieved_knowledge": [],
         "handoff_to_human": False,

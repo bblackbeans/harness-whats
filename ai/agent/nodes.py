@@ -118,7 +118,9 @@ _AGENT_JSON_INSTRUCTIONS = (
     '"return_to_orchestrator" (boolean, opcional — reclassifica no próximo turno). '
     "Não peça novamente dados que já existem no perfil persistente. "
     "Quando o cliente informar um dado de campo, salve em field_updates. "
-    "Se o cliente pedir outro setor (ex.: financeiro), use transfer_to_agent. "
+    "Se o cliente pedir OUTRO setor, use transfer_to_agent com o id/nome da lista "
+    "(o sistema troca o agente e ele atende neste mesmo turno — não diga 'aguarde o setor'). "
+    "Nunca diga que vai transferir para o agente que você já é. "
     "Se houver ROTEIRO OPERACIONAL, atualize o checklist ao concluir cada etapa."
 )
 _DEFAULT_FACTS_PROMPT = (
@@ -277,7 +279,14 @@ def load_semantic_memory(state: HarnessState) -> HarnessState:
 
         if agent:
             agent_id = agent.id
-            agent_prompt = agent.system_prompt or ""
+            identity = (
+                f"\n\n[IDENTIDADE DO TURNO]\n"
+                f'Você é o agente "{agent.name}" (id={agent.id}). '
+                "Você JÁ está atendendo este cliente agora — aja neste papel. "
+                "Não diga que vai transferir para o seu próprio setor nem peça para "
+                "aguardar você mesmo. Atenda direto conforme suas instruções."
+            )
+            agent_prompt = (agent.system_prompt or "") + identity
             allowed_tools = resolve_agent_tools_for_runtime(db, tenant.id, agent.id)
             source_label = {
                 "orquestrador": "orquestrador",
@@ -640,6 +649,11 @@ def persist_contact_and_tools(state: HarnessState) -> HarnessState:
     profile = state.get("contact_profile") or {}
     updates = state.get("field_updates") or {}
     checklist_state = dict(state.get("flow_checklist_state") or {})
+    transfer_rerun = False
+    switched_agent_id = state.get("agent_id")
+    switched_prompt = state.get("agent_system_prompt") or ""
+    switched_tools = state.get("allowed_tools") or {}
+    transfer_depth = int(state.get("transfer_depth") or 0)
     db = SessionLocal()
     try:
         if updates:
@@ -700,7 +714,7 @@ def persist_contact_and_tools(state: HarnessState) -> HarnessState:
                         if spec.name.lower() == name or name in spec.name.lower():
                             target_id = spec.id
                             break
-            if target_id:
+            if target_id and target_id != state.get("agent_id"):
                 row = get_agent_row(db, tenant.id, target_id)
                 if row and row.active and getattr(row, "role", ROLE_SPECIALIST) == ROLE_SPECIALIST:
                     profile = (
@@ -723,6 +737,20 @@ def persist_contact_and_tools(state: HarnessState) -> HarnessState:
                         Lifecycle.AGENT_SELECTED,
                         f"{row.name} (#{row.id}) via transferência",
                     )
+                    # Reexecuta o turno com o agente destino (não envia "aguarde o SAC")
+                    if transfer_depth < 2:
+                        identity = (
+                            f"\n\n[IDENTIDADE DO TURNO]\n"
+                            f'Você é o agente "{row.name}" (id={row.id}). '
+                            "Você JÁ está atendendo este cliente agora — aja neste papel. "
+                            "Não diga que vai transferir para o seu próprio setor nem peça para "
+                            "aguardar você mesmo. Atenda direto conforme suas instruções."
+                        )
+                        switched_agent_id = row.id
+                        switched_prompt = (row.system_prompt or "") + identity
+                        switched_tools = resolve_agent_tools_for_runtime(db, tenant.id, row.id)
+                        transfer_rerun = True
+                        transfer_depth += 1
 
         tools_entries = []
         agent_id = state.get("agent_id")
@@ -816,11 +844,26 @@ def persist_contact_and_tools(state: HarnessState) -> HarnessState:
                 checklist_state = run.checklist_state or checklist_state
     finally:
         db.close()
-    return {
+
+    out = {
         **state,
         "contact_profile": profile,
         "flow_checklist_state": checklist_state,
+        "transfer_to_agent": None,
+        "transfer_rerun": transfer_rerun,
+        "transfer_depth": transfer_depth,
+        "agent_id": switched_agent_id,
+        "agent_system_prompt": switched_prompt,
+        "allowed_tools": switched_tools,
     }
+    if transfer_rerun:
+        # Descarta a reply do agente origem; o destino responde neste turno
+        out["should_reply"] = False
+        out["outbound_text"] = ""
+        out["files_to_send"] = []
+        out["http_tool_calls"] = []
+        out["field_updates"] = {}
+    return out
 
 
 def persist_semantic_memory(state: HarnessState) -> HarnessState:
