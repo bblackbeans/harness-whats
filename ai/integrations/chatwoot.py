@@ -545,6 +545,49 @@ async def send_message(
         return {"ok": True, "data": response.json()}
 
 
+async def send_attachment(
+    account_id: int,
+    conversation_id: int,
+    *,
+    file_path: str,
+    filename: str,
+    mime_type: str = "application/octet-stream",
+    content: str = "",
+    bot_token: str | None = None,
+) -> dict:
+    if not CHATWOOT_BASE_URL:
+        return {"ok": False, "error": "CHATWOOT_BASE_URL não configurado no servidor"}
+    if not _is_token_configured(bot_token):
+        return {
+            "ok": False,
+            "error": "Token do robô Chatwoot não configurado para este cliente",
+        }
+
+    url = (
+        f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}"
+        f"/conversations/{conversation_id}/messages"
+    )
+    headers = _headers(bot_token)
+    # multipart: não enviar Content-Type json
+    headers.pop("Content-Type", None)
+
+    try:
+        with open(file_path, "rb") as handle:
+            files = {"attachments[]": (filename, handle, mime_type)}
+            data = {
+                "content": content or filename,
+                "message_type": "outgoing",
+                "private": "false",
+            }
+            async with httpx.AsyncClient(timeout=60) as client:
+                response = await client.post(url, data=data, files=files, headers=headers)
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        return {"ok": True, "data": response.json()}
+    except Exception as error:
+        return {"ok": False, "error": str(error)}
+
+
 async def send_template(
     account_id: int,
     conversation_id: int,

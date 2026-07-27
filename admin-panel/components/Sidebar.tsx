@@ -46,11 +46,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         window.location.href = "/login";
       }}
       footer={
-        <div className="mb-2 flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+        <div className="mb-2 flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-900">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 dark:bg-gray-800 dark:text-gray-200">
             A
           </div>
-          <span className="text-xs font-medium text-gray-700">Administrador</span>
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Administrador</span>
         </div>
       }
       maxWidth="6xl"

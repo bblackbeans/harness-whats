@@ -18,7 +18,7 @@ import { portalReportProblem } from "@/lib/portal-api";
 import { ScreenshotPreview } from "@/components/ImageLightbox";
 
 const fieldClass =
-  "w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100";
+  "w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500 dark:hover:border-gray-500 dark:focus:ring-brand-600/30";
 
 export function ReportProblemWidget() {
   const [open, setOpen] = useState(false);
@@ -238,21 +238,21 @@ export function ReportProblemWidget() {
             role="dialog"
             aria-modal={drawerVisible}
             aria-labelledby="report-problem-title"
-            className={`relative flex h-full w-full max-w-md flex-col bg-gray-50 shadow-2xl transition-transform duration-300 ease-in-out motion-reduce:transition-none motion-reduce:transform-none ${
+            className={`relative flex h-full w-full max-w-md flex-col bg-gray-50 dark:bg-gray-950 shadow-2xl transition-transform duration-300 ease-in-out motion-reduce:transition-none motion-reduce:transform-none ${
               drawerVisible ? "translate-x-0" : "translate-x-full"
             }`}
           >
-            <div className="border-b border-gray-200 bg-gradient-to-br from-brand-50 via-white to-white px-5 pb-5 pt-5">
+            <div className="border-b border-gray-200 bg-gradient-to-br from-brand-50 via-white to-white px-5 pb-5 pt-5 dark:border-gray-800 dark:from-brand-600/20 dark:via-gray-800 dark:to-gray-800">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-100 text-brand-700 shadow-sm">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-100 text-brand-700 shadow-sm dark:border-brand-700 dark:bg-brand-600/30 dark:text-brand-300">
                     <AlertTriangle className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h2 id="report-problem-title" className="text-xl font-bold tracking-tight text-gray-900">
+                    <h2 id="report-problem-title" className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                       Relatar problema
                     </h2>
-                    <p className="mt-2 rounded-lg border border-brand-100 bg-white/80 px-3 py-2 text-sm leading-relaxed text-gray-600 shadow-sm">
+                    <p className="mt-2 rounded-lg border border-brand-100 bg-white/80 px-3 py-2 text-sm leading-relaxed text-gray-600 shadow-sm dark:border-brand-700/50 dark:bg-gray-950/60 dark:text-gray-300">
                       Reporte um bug, sugira uma melhoria ou peça um ajuste no portal.
                     </p>
                   </div>
@@ -260,7 +260,7 @@ export function ReportProblemWidget() {
                 <button
                   type="button"
                   onClick={closeDrawer}
-                  className="shrink-0 rounded-lg border border-gray-200 bg-white p-2 text-gray-500 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
+                  className="shrink-0 rounded-lg border border-gray-200 bg-white p-2 text-gray-500 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -269,13 +269,13 @@ export function ReportProblemWidget() {
 
             <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-y-auto px-5 py-5">
               {success ? (
-                <p className="rounded-lg bg-green-50 p-4 text-sm text-green-800">
+                <p className="rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/40 dark:text-green-300">
                   Obrigado! Seu reporte foi enviado com sucesso.
                 </p>
               ) : (
                 <div className="space-y-5">
-                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <label className="mb-2 block text-sm font-semibold text-gray-800">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <label className="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">
                       Título <span className="text-brand-600">*</span>
                     </label>
                     <input
@@ -287,8 +287,8 @@ export function ReportProblemWidget() {
                       placeholder="Resumo do problema ou sugestão"
                     />
                   </div>
-                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <label className="mb-2 block text-sm font-semibold text-gray-800">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <label className="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">
                       Descrição <span className="text-brand-600">*</span>
                     </label>
                     <textarea
@@ -300,10 +300,10 @@ export function ReportProblemWidget() {
                       placeholder="Descreva o que aconteceu ou o que você gostaria de ver"
                     />
                   </div>
-                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <label className="mb-2 block text-sm font-semibold text-gray-800">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <label className="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">
                       Passos para reproduzir
-                      <span className="ml-1 text-xs font-normal text-gray-500">(opcional)</span>
+                      <span className="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400">(opcional)</span>
                     </label>
                     <textarea
                       className={`${fieldClass} min-h-[88px] resize-y`}
@@ -314,10 +314,10 @@ export function ReportProblemWidget() {
                     />
                   </div>
 
-                  <div className="rounded-xl border border-dashed border-gray-300 bg-white px-4 py-3 text-xs leading-relaxed text-gray-600">
-                    <span className="font-medium text-gray-700">Dica:</span> screenshot captura a página atual. A
+                  <div className="rounded-xl border border-dashed border-gray-300 bg-white px-4 py-3 text-xs leading-relaxed text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Dica:</span> screenshot captura a página atual. A
                     gravação continua ao navegar entre Prompts, Conhecimento etc. — só para quando você clicar em{" "}
-                    <span className="font-medium text-gray-800">Parar gravação</span>.
+                    <span className="font-medium text-gray-800 dark:text-gray-200">Parar gravação</span>.
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -342,12 +342,12 @@ export function ReportProblemWidget() {
                   </div>
 
                   {screenshot && (
-                    <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                      <p className="mb-2 text-xs font-medium text-gray-700">Screenshot da página anexado</p>
+                    <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                      <p className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300">Screenshot da página anexado</p>
                       <ScreenshotPreview src={screenshot.data} alt="Screenshot anexado" thumbnailClassName="max-h-32" />
                       <button
                         type="button"
-                        className="mt-2 text-xs text-red-600 hover:underline"
+                        className="mt-2 text-xs text-red-600 hover:underline dark:text-red-400"
                         onClick={() => setScreenshot(null)}
                       >
                         Remover screenshot
@@ -356,11 +356,11 @@ export function ReportProblemWidget() {
                   )}
 
                   {recording && (
-                    <div className="rounded-xl border border-gray-200 bg-white p-3 text-sm text-gray-600 shadow-sm">
+                    <div className="rounded-xl border border-gray-200 bg-white p-3 text-sm text-gray-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                       Gravação anexada ({Math.round(recording.duration_ms / 1000)}s)
                       <button
                         type="button"
-                        className="ml-2 text-xs text-red-600 hover:underline"
+                        className="ml-2 text-xs text-red-600 hover:underline dark:text-red-400"
                         onClick={() => setRecording(null)}
                       >
                         Remover
@@ -368,22 +368,22 @@ export function ReportProblemWidget() {
                     </div>
                   )}
 
-                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-700 shadow-sm">
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-700 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                     <input
                       type="checkbox"
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-700"
                       checked={incluirContexto}
                       onChange={(e) => setIncluirContexto(e.target.checked)}
                     />
                     <span>Incluir contexto técnico (erros JS, requisições falhas, navegador)</span>
                   </label>
 
-                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                 </div>
               )}
 
               {!success && (
-                <div className="mt-auto flex gap-3 border-t border-gray-200 bg-gray-50/80 pt-5">
+                <div className="mt-auto flex gap-3 border-t border-gray-200 bg-gray-50/80 pt-5 dark:border-gray-800 dark:bg-gray-950/80">
                   <button type="button" className="btn-secondary flex-1" onClick={closeDrawer}>
                     Cancelar
                   </button>

@@ -1,4 +1,8 @@
 import { getApiBase } from "./api-base";
+import type { Contact, CustomField, HttpTool, InboundWebhook, SendableFile } from "./crm-types";
+export type { Contact, CustomField, HttpTool, InboundWebhook, SendableFile } from "./crm-types";
+import type { AgentToolBinding, AgentToolItem, FlowItem, FlowRun, TenantAgent } from "./flow-types";
+export type { AgentToolBinding, AgentToolItem, FlowItem, FlowRun, TenantAgent } from "./flow-types";
 
 const API_BASE = getApiBase();
 
@@ -379,4 +383,331 @@ export async function updateProblema(id: string, data: { status?: string; notas_
 
 export async function deleteProblema(id: string) {
   return request(`/admin/api/problemas/${id}`, { method: "DELETE" });
+}
+
+// --- CRM / integrações / arquivos (por tenant) ---
+
+function crmBase(tenantId: string) {
+  return `/admin/api/tenants/${tenantId}/crm`;
+}
+
+export async function listCustomFields(tenantId: string) {
+  return request<{ fields: CustomField[] }>(`${crmBase(tenantId)}/fields`);
+}
+
+export async function createCustomField(
+  tenantId: string,
+  data: { key: string; label: string; field_type?: string; required?: boolean }
+) {
+  return request<CustomField>(`${crmBase(tenantId)}/fields`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateCustomField(
+  tenantId: string,
+  fieldId: number,
+  data: Partial<{ label: string; field_type: string; required: boolean; sort_order: number }>
+) {
+  return request<CustomField>(`${crmBase(tenantId)}/fields/${fieldId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteCustomField(tenantId: string, fieldId: number) {
+  return request(`${crmBase(tenantId)}/fields/${fieldId}`, { method: "DELETE" });
+}
+
+export async function listContacts(tenantId: string, q = "") {
+  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+  return request<{ contacts: Contact[] }>(`${crmBase(tenantId)}/contacts${qs}`);
+}
+
+export async function getContact(tenantId: string, contactId: number) {
+  return request<Contact>(`${crmBase(tenantId)}/contacts/${contactId}`);
+}
+
+export async function createContact(
+  tenantId: string,
+  data: { phone: string; name?: string; email?: string; fields?: Record<string, unknown> }
+) {
+  return request<Contact>(`${crmBase(tenantId)}/contacts`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateContact(
+  tenantId: string,
+  contactId: number,
+  data: Partial<{ name: string; email: string; phone: string; fields: Record<string, unknown> }>
+) {
+  return request<Contact>(`${crmBase(tenantId)}/contacts/${contactId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteContact(tenantId: string, contactId: number) {
+  return request(`${crmBase(tenantId)}/contacts/${contactId}`, { method: "DELETE" });
+}
+
+export async function listInboundWebhooks(tenantId: string) {
+  return request<{ webhooks: InboundWebhook[] }>(`${crmBase(tenantId)}/webhooks`);
+}
+
+export async function createInboundWebhook(
+  tenantId: string,
+  data: {
+    name: string;
+    slug?: string;
+    field_mapping?: Record<string, string>;
+    start_conversation?: boolean;
+    initial_message?: string;
+  }
+) {
+  return request<InboundWebhook>(`${crmBase(tenantId)}/webhooks`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateInboundWebhook(
+  tenantId: string,
+  webhookId: number,
+  data: Partial<{
+    name: string;
+    field_mapping: Record<string, string>;
+    start_conversation: boolean;
+    initial_message: string;
+    active: boolean;
+  }>
+) {
+  return request<InboundWebhook>(`${crmBase(tenantId)}/webhooks/${webhookId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function regenerateWebhookSecret(tenantId: string, webhookId: number) {
+  return request<InboundWebhook>(`${crmBase(tenantId)}/webhooks/${webhookId}/regenerate-secret`, {
+    method: "POST",
+  });
+}
+
+export async function deleteInboundWebhook(tenantId: string, webhookId: number) {
+  return request(`${crmBase(tenantId)}/webhooks/${webhookId}`, { method: "DELETE" });
+}
+
+export async function listHttpTools(tenantId: string) {
+  return request<{ tools: HttpTool[] }>(`${crmBase(tenantId)}/http-tools`);
+}
+
+export async function createHttpTool(tenantId: string, data: Partial<HttpTool> & { name: string; url: string }) {
+  return request<HttpTool>(`${crmBase(tenantId)}/http-tools`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateHttpTool(tenantId: string, toolId: number, data: Partial<HttpTool>) {
+  return request<HttpTool>(`${crmBase(tenantId)}/http-tools/${toolId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteHttpTool(tenantId: string, toolId: number) {
+  return request(`${crmBase(tenantId)}/http-tools/${toolId}`, { method: "DELETE" });
+}
+
+export async function listSendableFiles(tenantId: string) {
+  return request<{ files: SendableFile[] }>(`${crmBase(tenantId)}/files`);
+}
+
+export async function uploadSendableFile(tenantId: string, file: File, description = "") {
+  const token = localStorage.getItem("access_token");
+  const form = new FormData();
+  form.append("file", file);
+  form.append("description", description);
+  const res = await fetch(`${API_BASE}${crmBase(tenantId)}/files`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(typeof body.detail === "string" ? body.detail : "Falha no upload");
+  }
+  return res.json() as Promise<SendableFile>;
+}
+
+export async function updateSendableFile(tenantId: string, fileId: number, description: string) {
+  return request<SendableFile>(`${crmBase(tenantId)}/files/${fileId}`, {
+    method: "PUT",
+    body: JSON.stringify({ description }),
+  });
+}
+
+export async function deleteSendableFile(tenantId: string, fileId: number) {
+  return request(`${crmBase(tenantId)}/files/${fileId}`, { method: "DELETE" });
+}
+
+// --- Agents / Flows ---
+
+function tenantApi(tenantId: string) {
+  return `/admin/api/tenants/${tenantId}`;
+}
+
+export async function listAgents(tenantId: string, role?: string) {
+  const q = role ? `?role=${encodeURIComponent(role)}` : "";
+  return request<{ agents: TenantAgent[] }>(`${tenantApi(tenantId)}/agents${q}`);
+}
+
+export async function getOrchestrator(tenantId: string) {
+  return request<TenantAgent>(`${tenantApi(tenantId)}/orchestrator`);
+}
+
+export async function updateOrchestrator(tenantId: string, data: Partial<TenantAgent>) {
+  return request<TenantAgent>(`${tenantApi(tenantId)}/orchestrator`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function createAgent(
+  tenantId: string,
+  data: Partial<TenantAgent> & { name: string }
+) {
+  return request<TenantAgent>(`${tenantApi(tenantId)}/agents`, {
+    method: "POST",
+    body: JSON.stringify({ ...data, role: data.role || "specialist" }),
+  });
+}
+
+export async function updateAgent(tenantId: string, agentId: number, data: Partial<TenantAgent>) {
+  return request<TenantAgent>(`${tenantApi(tenantId)}/agents/${agentId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAgent(tenantId: string, agentId: number) {
+  return request(`${tenantApi(tenantId)}/agents/${agentId}`, { method: "DELETE" });
+}
+
+export async function getAgentTools(tenantId: string, agentId: number) {
+  return request<{ bindings: AgentToolBinding[] }>(`${tenantApi(tenantId)}/agents/${agentId}/tools`);
+}
+
+export async function setAgentTools(
+  tenantId: string,
+  agentId: number,
+  bindings: AgentToolBinding[]
+) {
+  return request<{ bindings: AgentToolBinding[] }>(`${tenantApi(tenantId)}/agents/${agentId}/tools`, {
+    method: "PUT",
+    body: JSON.stringify({ bindings }),
+  });
+}
+
+export async function listAgentTools(tenantId: string, agentId?: number) {
+  const q = agentId ? `?agent_id=${agentId}` : "";
+  return request<{ tools: AgentToolItem[] }>(`${tenantApi(tenantId)}/tools${q}`);
+}
+
+export async function getAgentTool(tenantId: string, toolId: number) {
+  return request<AgentToolItem>(`${tenantApi(tenantId)}/tools/${toolId}`);
+}
+
+export async function createAgentTool(
+  tenantId: string,
+  data: Partial<AgentToolItem> & { agent_id: number; name: string }
+) {
+  return request<AgentToolItem>(`${tenantApi(tenantId)}/tools`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateAgentTool(
+  tenantId: string,
+  toolId: number,
+  data: Partial<AgentToolItem>
+) {
+  return request<AgentToolItem>(`${tenantApi(tenantId)}/tools/${toolId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAgentTool(tenantId: string, toolId: number) {
+  return request(`${tenantApi(tenantId)}/tools/${toolId}`, { method: "DELETE" });
+}
+
+export async function listFlows(tenantId: string, agentId?: number) {
+  const q = agentId ? `?agent_id=${agentId}` : "";
+  return request<{ flows: FlowItem[] }>(`${tenantApi(tenantId)}/flows${q}`);
+}
+
+export async function getFlow(tenantId: string, flowId: number) {
+  return request<FlowItem>(`${tenantApi(tenantId)}/flows/${flowId}`);
+}
+
+export async function createFlow(
+  tenantId: string,
+  data: { name: string; agent_id?: number; description?: string; base_prompt?: string }
+) {
+  return request<FlowItem>(`${tenantApi(tenantId)}/flows`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateFlow(tenantId: string, flowId: number, data: Partial<FlowItem>) {
+  return request<FlowItem>(`${tenantApi(tenantId)}/flows/${flowId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function publishFlow(tenantId: string, flowId: number) {
+  return request<FlowItem>(`${tenantApi(tenantId)}/flows/${flowId}/publish`, { method: "POST" });
+}
+
+export async function deleteFlow(tenantId: string, flowId: number) {
+  return request(`${tenantApi(tenantId)}/flows/${flowId}`, { method: "DELETE" });
+}
+
+export async function importFlow(tenantId: string, file: File, agentId?: number, name = "") {
+  const token = localStorage.getItem("access_token");
+  const form = new FormData();
+  form.append("file", file);
+  if (agentId) form.append("agent_id", String(agentId));
+  if (name) form.append("name", name);
+  const res = await fetch(`${API_BASE}${tenantApi(tenantId)}/flows/import`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(typeof body.detail === "string" ? body.detail : "Falha na importação");
+  }
+  return res.json() as Promise<FlowItem>;
+}
+
+export async function recompileFlow(tenantId: string, flowId: number) {
+  return request<FlowItem>(`${tenantApi(tenantId)}/flows/${flowId}/recompile`, { method: "POST" });
+}
+
+export async function listFlowRuns(tenantId: string, flowId?: number) {
+  const q = flowId ? `?flow_id=${flowId}` : "";
+  return request<{ runs: FlowRun[] }>(`${tenantApi(tenantId)}/flow-runs${q}`);
+}
+
+export async function getFlowRun(tenantId: string, runId: number) {
+  return request<FlowRun>(`${tenantApi(tenantId)}/flow-runs/${runId}`);
 }

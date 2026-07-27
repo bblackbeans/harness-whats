@@ -18,10 +18,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  novo: "bg-blue-50 text-blue-700",
-  em_analise: "bg-amber-50 text-amber-700",
-  resolvido: "bg-green-50 text-green-700",
-  descartado: "bg-gray-100 text-gray-600",
+  novo: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  em_analise: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  resolvido: "bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  descartado: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300",
 };
 
 export default function ProblemasPage() {
@@ -92,8 +92,8 @@ export default function ProblemasPage() {
     <AppShell>
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Problemas</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">Problemas</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Reportes enviados pelos clientes pelo portal (bugs, sugestões e pedidos de ajuste).
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function ProblemasPage() {
 
       <div className="card mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label className="mb-1 block text-sm font-medium text-gray-700">Cliente</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Cliente</label>
           <select
             className="input-field"
             value={tenantFilter}
@@ -123,7 +123,7 @@ export default function ProblemasPage() {
           </select>
         </div>
         <div className="flex-1">
-          <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
           <select
             className="input-field"
             value={statusFilter}
@@ -142,12 +142,12 @@ export default function ProblemasPage() {
         </div>
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="card overflow-hidden p-0">
         <div className="table-wrap">
           <table className="w-full min-w-[720px] text-sm">
-            <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium uppercase text-gray-500">
+            <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium uppercase text-gray-500 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400">
               <tr>
                 <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Cliente</th>
@@ -158,16 +158,16 @@ export default function ProblemasPage() {
                 <th className="px-4 py-3 w-12" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading && items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     Carregando...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhum problema encontrado.
                   </td>
                 </tr>
@@ -175,26 +175,26 @@ export default function ProblemasPage() {
                 items.map((p) => (
                   <tr
                     key={p.id}
-                    className="cursor-pointer transition hover:bg-gray-50"
+                    className="cursor-pointer transition hover:bg-gray-50 dark:hover:bg-gray-800"
                     onClick={() => router.push(`/problemas/${p.id}`)}
                   >
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-600">
+                    <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-300">
                       {formatBrasiliaDateTime(p.criado_em)}
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{p.tenant_name}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{p.titulo}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{p.tenant_name}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{p.titulo}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                          STATUS_STYLES[p.status] || "bg-gray-100 text-gray-600"
+                          STATUS_STYLES[p.status] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                         }`}
                       >
                         {STATUS_LABELS[p.status] || p.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{p.origem}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{p.origem}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2 text-gray-400">
+                      <div className="flex gap-2 text-gray-400 dark:text-gray-500">
                         {p.tem_screenshot && <Image className="h-4 w-4 text-blue-500" aria-label="Screenshot" />}
                         {p.tem_gravacao && <Video className="h-4 w-4 text-purple-500" aria-label="Gravação" />}
                         {!p.tem_screenshot && !p.tem_gravacao && <span className="text-gray-300">—</span>}
@@ -203,7 +203,7 @@ export default function ProblemasPage() {
                     <td className="px-4 py-3">
                       <button
                         type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:text-gray-500 dark:hover:bg-red-950/50"
                         aria-label="Excluir problema"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -220,8 +220,8 @@ export default function ProblemasPage() {
           </table>
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-3 border-t border-gray-100 px-4 py-4 sm:flex-row">
-          <p className="text-sm text-gray-500">
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-gray-100 px-4 py-4 sm:flex-row dark:border-gray-800">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {total} registro{total !== 1 ? "s" : ""} · página {page} de {totalPages}
           </p>
           <div className="flex items-center gap-2">

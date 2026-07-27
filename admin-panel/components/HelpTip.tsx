@@ -33,7 +33,7 @@ export function HelpTip({ text, className = "" }: HelpTipProps) {
     <span ref={ref} className={`relative inline-flex shrink-0 align-middle ${className}`}>
       <button
         type="button"
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-brand-600"
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-brand-600 dark:text-gray-500 dark:hover:bg-gray-800"
         aria-label="Ajuda"
         onClick={toggle}
         onMouseDown={(e) => e.preventDefault()}
@@ -43,7 +43,7 @@ export function HelpTip({ text, className = "" }: HelpTipProps) {
       {open && (
         <div
           role="tooltip"
-          className="absolute left-0 top-full z-50 mt-2 w-[min(16rem,calc(100vw-2rem))] rounded-lg border border-gray-200 bg-white p-3 text-xs leading-relaxed text-gray-600 shadow-lg sm:left-full sm:top-1/2 sm:mt-0 sm:ml-2 sm:w-64 sm:-translate-y-1/2"
+          className="absolute left-0 top-full z-50 mt-2 w-[min(16rem,calc(100vw-2rem))] rounded-lg border border-gray-200 bg-white p-3 text-xs leading-relaxed text-gray-600 shadow-lg sm:left-full sm:top-1/2 sm:mt-0 sm:ml-2 sm:w-64 sm:-translate-y-1/2 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
           onClick={(e) => e.stopPropagation()}
         >
           {text}
@@ -61,7 +61,7 @@ type FieldLabelProps = {
 
 export function FieldLabel({ label, help, htmlFor }: FieldLabelProps) {
   return (
-    <div className="mb-1.5 flex items-center gap-1 text-sm font-medium text-gray-700">
+    <div className="mb-1.5 flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
       <label htmlFor={htmlFor} className="cursor-default">
         {label}
       </label>

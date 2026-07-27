@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogOut, Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export type NavItem = {
   href: string;
@@ -61,14 +62,14 @@ function SidebarContent({
 }: Omit<ResponsiveShellProps, "children" | "maxWidth"> & { onNavigate?: () => void }) {
   return (
     <>
-      <div className="border-b border-gray-200 px-5 py-5">
+      <div className="border-b border-gray-200 px-5 py-5 dark:border-gray-800">
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white shadow-sm">
             H
           </div>
           <div>
-            <span className="block text-sm font-semibold text-gray-900">{title}</span>
-            <span className="text-xs text-gray-500">{subtitle}</span>
+            <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</span>
           </div>
         </div>
       </div>
@@ -76,7 +77,7 @@ function SidebarContent({
       <nav className="flex-1 overflow-y-auto px-3 py-5">
         {navSections.map((section) => (
           <div key={section.title} className="mb-6">
-            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
               {section.title}
             </p>
             <div className="flex flex-col gap-0.5">
@@ -88,11 +89,12 @@ function SidebarContent({
         ))}
       </nav>
 
-      <div className="border-t border-gray-200 p-3">
+      <div className="border-t border-gray-200 p-3 dark:border-gray-800">
         {footer}
+        <ThemeToggle />
         <button
           type="button"
-          className="flex w-full items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+          className="flex w-full items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-red-800 dark:hover:bg-red-950/50 dark:hover:text-red-400"
           onClick={onLogout}
         >
           <LogOut className="h-[18px] w-[18px]" strokeWidth={2} />
@@ -130,9 +132,9 @@ export function ResponsiveShell({
   const maxW = maxWidth === "5xl" ? "max-w-5xl" : "max-w-6xl";
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white lg:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 lg:flex">
         <SidebarContent
           title={title}
           subtitle={subtitle}
@@ -144,21 +146,24 @@ export function ResponsiveShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-800 dark:bg-gray-950 lg:hidden">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white">
               H
             </div>
-            <span className="text-sm font-semibold text-gray-900">{title}</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</span>
           </div>
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-            aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <ThemeToggle compact />
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </header>
 
         {/* Mobile drawer — montado sempre em <lg para animação de entrada/saída */}
@@ -177,7 +182,7 @@ export function ResponsiveShell({
             role="dialog"
             aria-modal={menuOpen}
             aria-hidden={!menuOpen}
-            className={`absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl transition-transform duration-300 ease-in-out motion-reduce:transition-none motion-reduce:transform-none ${
+            className={`absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl transition-transform duration-300 ease-in-out motion-reduce:transition-none motion-reduce:transform-none dark:bg-gray-950 ${
               menuOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >

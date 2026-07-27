@@ -8,18 +8,65 @@ import { AppShell } from "@/components/Sidebar";
 import { FieldLabel, HelpTip } from "@/components/HelpTip";
 import { PasswordInput } from "@/components/PasswordInput";
 import {
+  createAgent,
+  createAgentTool,
+  createContact,
+  createCustomField,
+  createFlow,
+  createHttpTool,
+  createInboundWebhook,
   createTenantUser,
+  deleteAgent,
+  deleteAgentTool,
+  deleteContact,
+  deleteCustomField,
+  deleteFlow,
+  deleteHttpTool,
+  deleteInboundWebhook,
   deleteKnowledge,
+  deleteSendableFile,
+  getAgentTool,
+  getFlow,
+  getOrchestrator,
   getTenant,
+  importFlow,
+  listAgents,
+  listAgentTools,
+  listContacts,
+  listCustomFields,
+  listFlowRuns,
+  listFlows,
+  listHttpTools,
+  listInboundWebhooks,
   listKnowledge,
   listLlmModels,
+  listSendableFiles,
   listTenantUsers,
+  publishFlow,
+  recompileFlow,
+  regenerateWebhookSecret,
   reindexKnowledge,
   Tenant,
   toggleTenantActive,
+  updateAgent,
+  updateAgentTool,
+  updateContact,
+  updateFlow,
+  updateInboundWebhook,
+  updateOrchestrator,
+  updateSendableFile,
   updateTenant,
   uploadKnowledge,
+  uploadSendableFile,
 } from "@/lib/api";
+import { FieldsManager } from "@/components/crm/FieldsManager";
+import { ContactsManager } from "@/components/crm/ContactsManager";
+import { IntegrationsManager } from "@/components/crm/IntegrationsManager";
+import { FilesManager } from "@/components/crm/FilesManager";
+import { AgentsManager } from "@/components/crm/AgentsManager";
+import { FlowsManager } from "@/components/crm/FlowsManager";
+import { OrchestratorManager } from "@/components/crm/OrchestratorManager";
+import { ToolsManager } from "@/components/crm/ToolsManager";
 
 const PROMPT_TABS = [
   { key: "agent_system", label: "Agente" },
@@ -27,7 +74,20 @@ const PROMPT_TABS = [
   { key: "summarize_system", label: "Resumo" },
 ] as const;
 
-const SECTIONS = ["Geral", "Prompts", "Conhecimento", "Acesso ao portal"] as const;
+const SECTIONS = [
+  "Geral",
+  "Prompts",
+  "Conhecimento",
+  "Arquivos",
+  "Campos",
+  "Contatos",
+  "Integrações",
+  "Orquestrador",
+  "Agentes",
+  "Tools",
+  "Flows",
+  "Acesso ao portal",
+] as const;
 
 export default function ClienteDetailPage() {
   const params = useParams();
@@ -136,7 +196,7 @@ export default function ClienteDetailPage() {
   if (!cliente && !error) {
     return (
       <AppShell>
-        <p className="text-sm text-gray-500">Carregando...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Carregando...</p>
       </AppShell>
     );
   }
@@ -159,15 +219,15 @@ export default function ClienteDetailPage() {
 
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <nav className="text-sm text-gray-500">
-            <Link href="/clientes" className="hover:text-gray-700">
+          <nav className="text-sm text-gray-500 dark:text-gray-400">
+            <Link href="/clientes" className="hover:text-gray-700 dark:hover:text-gray-200">
               Clientes
             </Link>
             <span className="mx-2">/</span>
-            <span className="text-gray-900">{cliente?.name}</span>
+            <span className="text-gray-900 dark:text-gray-100">{cliente?.name}</span>
           </nav>
-          <h1 className="mt-2 text-xl font-semibold text-gray-900 sm:text-2xl">{cliente?.name}</h1>
-          <p className="text-sm text-gray-500">{clienteId}</p>
+          <h1 className="mt-2 text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">{cliente?.name}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{clienteId}</p>
         </div>
         <div className="flex w-full items-center gap-2 sm:w-auto">
           <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => setModalOpen(true)}>
@@ -185,7 +245,7 @@ export default function ClienteDetailPage() {
             type="button"
             onClick={() => setSection(s)}
             className={`rounded-lg px-4 py-2 text-sm font-medium ${
-              section === s ? "bg-brand-50 text-brand-700" : "text-gray-600 hover:bg-gray-100"
+              section === s ? "bg-brand-50 text-brand-700 dark:bg-brand-600/20 dark:text-brand-300" : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
             }`}
           >
             {s}
@@ -194,6 +254,99 @@ export default function ClienteDetailPage() {
         </div>
       </div>
 
+      {(section === "Campos" ||
+        section === "Contatos" ||
+        section === "Integrações" ||
+        section === "Arquivos" ||
+        section === "Orquestrador" ||
+        section === "Agentes" ||
+        section === "Tools" ||
+        section === "Flows") && (
+        <div className="max-w-5xl">
+          {section === "Campos" && (
+            <FieldsManager
+              load={() => listCustomFields(clienteId)}
+              create={(data) => createCustomField(clienteId, data)}
+              remove={(id) => deleteCustomField(clienteId, id)}
+            />
+          )}
+          {section === "Contatos" && (
+            <ContactsManager
+              loadContacts={(q) => listContacts(clienteId, q)}
+              loadFields={() => listCustomFields(clienteId)}
+              create={(data) => createContact(clienteId, data)}
+              update={(id, data) => updateContact(clienteId, id, data)}
+              remove={(id) => deleteContact(clienteId, id)}
+            />
+          )}
+          {section === "Integrações" && (
+            <IntegrationsManager
+              loadWebhooks={() => listInboundWebhooks(clienteId)}
+              createWebhook={(data) => createInboundWebhook(clienteId, data)}
+              updateWebhook={(id, data) => updateInboundWebhook(clienteId, id, data)}
+              regenSecret={(id) => regenerateWebhookSecret(clienteId, id)}
+              deleteWebhook={(id) => deleteInboundWebhook(clienteId, id)}
+              loadTools={() => listHttpTools(clienteId)}
+              createTool={(data) => createHttpTool(clienteId, data)}
+              deleteTool={(id) => deleteHttpTool(clienteId, id)}
+              loadFields={() => listCustomFields(clienteId)}
+            />
+          )}
+          {section === "Arquivos" && (
+            <FilesManager
+              load={() => listSendableFiles(clienteId)}
+              upload={(file, description) => uploadSendableFile(clienteId, file, description)}
+              update={(id, description) => updateSendableFile(clienteId, id, description)}
+              remove={(id) => deleteSendableFile(clienteId, id)}
+            />
+          )}
+          {section === "Orquestrador" && (
+            <OrchestratorManager
+              load={() => getOrchestrator(clienteId)}
+              save={(data) => updateOrchestrator(clienteId, data)}
+              loadSpecialists={() => listAgents(clienteId, "specialist")}
+            />
+          )}
+          {section === "Agentes" && (
+            <AgentsManager
+              load={() => listAgents(clienteId, "specialist")}
+              create={(data) => createAgent(clienteId, data)}
+              update={(id, data) => updateAgent(clienteId, id, data)}
+              remove={(id) => deleteAgent(clienteId, id)}
+            />
+          )}
+          {section === "Tools" && (
+            <ToolsManager
+              loadAgents={() => listAgents(clienteId, "specialist")}
+              loadTools={(agentId) => listAgentTools(clienteId, agentId)}
+              getTool={(id) => getAgentTool(clienteId, id)}
+              createTool={(data) => createAgentTool(clienteId, data)}
+              updateTool={(id, data) => updateAgentTool(clienteId, id, data)}
+              deleteTool={(id) => deleteAgentTool(clienteId, id)}
+              loadFiles={() => listSendableFiles(clienteId)}
+            />
+          )}
+          {section === "Flows" && (
+            <FlowsManager
+              loadAgents={() => listAgents(clienteId, "specialist")}
+              loadFlows={(agentId) => listFlows(clienteId, agentId)}
+              getFlow={(id) => getFlow(clienteId, id)}
+              createFlow={(data) => createFlow(clienteId, data)}
+              publishFlow={(id) => publishFlow(clienteId, id)}
+              deleteFlow={(id) => deleteFlow(clienteId, id)}
+              importFlow={(file, agentId) => importFlow(clienteId, file, agentId)}
+              recompileFlow={(id) => recompileFlow(clienteId, id)}
+              updateFlow={(id, data) => updateFlow(clienteId, id, data)}
+              loadRuns={(flowId) => listFlowRuns(clienteId, flowId)}
+            />
+          )}
+        </div>
+      )}
+
+      {(section === "Geral" ||
+        section === "Prompts" ||
+        section === "Conhecimento" ||
+        section === "Acesso ao portal") && (
       <form onSubmit={handleSave} className="card max-w-3xl space-y-6">
         {section === "Geral" && (
           <>
@@ -215,7 +368,7 @@ export default function ClienteDetailPage() {
                 help="Token do Agent Bot no Chatwoot para este cliente enviar mensagens. Encontre em Configurações → Agent Bots."
               />
               {chatwootBotTokenPreview ? (
-                <p className="mb-2 font-mono text-xs text-gray-500">
+                <p className="mb-2 font-mono text-xs text-gray-500 dark:text-gray-400">
                   Token atual: {chatwootBotTokenPreview}
                 </p>
               ) : (
@@ -230,23 +383,23 @@ export default function ClienteDetailPage() {
                 placeholder="Cole o novo token para substituir (deixe vazio para manter)"
               />
             </div>
-            <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4 text-sm text-gray-700">
-              <p className="font-medium text-gray-900">Atendimento humano (handoff)</p>
-              <ul className="mt-2 list-inside list-disc space-y-1 text-gray-600">
+            <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-4 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+              <p className="font-medium text-gray-900 dark:text-gray-100">Atendimento humano (handoff)</p>
+              <ul className="mt-2 list-inside list-disc space-y-1 text-gray-600 dark:text-gray-300">
                 <li>
                   Ao pedir um atendente, o bot envia a mensagem de transferência e para de responder.
                 </li>
                 <li>
                   O bot marca o handoff internamente e tenta aplicar a etiqueta{" "}
-                  <strong className="text-gray-800">humano</strong> (crie em Configurações → Etiquetas).
+                  <strong className="text-gray-800 dark:text-gray-200">humano</strong> (crie em Configurações → Etiquetas).
                 </li>
                 <li>
                   Para a etiqueta aparecer automaticamente, configure{" "}
-                  <strong className="text-gray-800">CHATWOOT_ADMIN_TOKEN</strong> no servidor
+                  <strong className="text-gray-800 dark:text-gray-200">CHATWOOT_ADMIN_TOKEN</strong> no servidor
                   (token de um admin do Chatwoot).
                 </li>
                 <li>
-                  Depois que alguém clicar <strong className="text-gray-800">Resolver</strong>, o bot volta a atender.
+                  Depois que alguém clicar <strong className="text-gray-800 dark:text-gray-200">Resolver</strong>, o bot volta a atender.
                 </li>
               </ul>
             </div>
@@ -274,7 +427,7 @@ export default function ClienteDetailPage() {
         {section === "Prompts" && (
           <>
             <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <div className="flex min-w-max flex-nowrap gap-2 border-b border-gray-200 pb-2">
+            <div className="flex min-w-max flex-nowrap gap-2 border-b border-gray-200 pb-2 dark:border-gray-800">
               {PROMPT_TABS.map((tab) => (
                 <button
                   key={tab.key}
@@ -315,15 +468,15 @@ export default function ClienteDetailPage() {
               </button>
             </div>
             {knowledge.length === 0 ? (
-              <p className="text-sm text-gray-500">Nenhum documento.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum documento.</p>
             ) : (
-              <ul className="divide-y divide-gray-100 text-sm">
+              <ul className="divide-y divide-gray-100 text-sm dark:divide-gray-800">
                 {knowledge.map((f) => (
                   <li key={f.name} className="flex items-center justify-between py-2">
                     <span>{f.name}</span>
                     <button
                       type="button"
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-400"
                       onClick={async () => {
                         await deleteKnowledge(clienteId, f.name);
                         setKnowledge((prev) => prev.filter((x) => x.name !== f.name));
@@ -340,10 +493,10 @@ export default function ClienteDetailPage() {
 
         {section === "Acesso ao portal" && (
           <div className="space-y-6">
-            <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-4">
-              <p className="text-sm text-gray-700">
+            <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-4 dark:border-brand-700/40 dark:bg-brand-600/10">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 O cliente acessa o portal em{" "}
-                <code className="rounded bg-white px-1 text-xs">/portal/login</code> para gerenciar
+                <code className="rounded bg-white px-1 text-xs dark:bg-gray-900">/portal/login</code> para gerenciar
                 prompts, base de conhecimento e acompanhar o uso do chatbot.
               </p>
             </div>
@@ -353,19 +506,19 @@ export default function ClienteDetailPage() {
               </p>
             ) : (
               <div>
-                <h3 className="mb-2 text-sm font-medium text-gray-900">Usuários cadastrados</h3>
-                <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 text-sm">
+                <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">Usuários cadastrados</h3>
+                <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 text-sm dark:divide-gray-800 dark:border-gray-800">
                   {portalUsers.map((u) => (
                     <li key={u.id} className="flex justify-between px-4 py-3">
                       <span className="font-medium">{u.name}</span>
-                      <span className="text-gray-500">{u.email}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{u.email}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-            <div className="border-t border-gray-100 pt-4">
-              <h3 className="mb-3 text-sm font-medium text-gray-900">Adicionar acesso</h3>
+            <div className="border-t border-gray-100 pt-4 dark:border-gray-800">
+              <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-gray-100">Adicionar acesso</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
                   className="input-field"
@@ -413,13 +566,14 @@ export default function ClienteDetailPage() {
           </div>
         )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         {(section === "Geral" || section === "Prompts") && (
           <button type="submit" className="btn-primary" disabled={saving}>
             {saving ? "Salvando..." : "Salvar alterações"}
           </button>
         )}
       </form>
+      )}
     </AppShell>
   );
 }

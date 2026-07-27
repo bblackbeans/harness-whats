@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: ["./app/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
@@ -12,18 +13,20 @@ const config: Config = {
           600: "#3538cd",
           700: "#2d31a6",
         },
+        // Neutros (sem tom azulado) — light mode permanece claro; dark fica mais preto
         gray: {
-          25: "#fcfcfd",
-          50: "#f9fafb",
-          100: "#f2f4f7",
-          200: "#eaecf0",
-          300: "#d0d5dd",
-          400: "#98a2b3",
-          500: "#667085",
-          600: "#475467",
-          700: "#344054",
-          800: "#1d2939",
-          900: "#101828",
+          25: "#fcfcfc",
+          50: "#fafafa",
+          100: "#f5f5f5",
+          200: "#e5e5e5",
+          300: "#d4d4d4",
+          400: "#a3a3a3",
+          500: "#737373",
+          600: "#525252",
+          700: "#404040",
+          800: "#262626",
+          900: "#171717",
+          950: "#0a0a0a",
         },
       },
       fontFamily: {

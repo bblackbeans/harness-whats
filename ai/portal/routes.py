@@ -17,10 +17,20 @@ from harness_platform.tenant_service import (
 )
 from harness_platform.usage_service import check_tenant_limits, tenant_usage_month
 from knowledge import sync_tenant_index
+from harness_platform.crm_routes import build_crm_routes
+from harness_platform.flow_routes import build_flow_routes
 from portal.deps import get_current_tenant_user
 from tenants.registry import reload_tenants
 
 router = APIRouter(prefix="/portal/api", tags=["portal"])
+
+
+def _portal_tenant_id(user: TenantUser = Depends(get_current_tenant_user)) -> str:
+    return user.tenant_id
+
+
+router.include_router(build_crm_routes(get_tenant_id=_portal_tenant_id, prefix="/crm"))
+router.include_router(build_flow_routes(get_tenant_id=_portal_tenant_id, prefix=""))
 
 
 @router.post("/auth/login")

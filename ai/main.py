@@ -87,6 +87,8 @@ class DispatchRequest(BaseModel):
     language: str = "pt_BR"
     tenant_id: str | None = None
     account_id: int | None = None
+    agent_id: int | None = None
+    flow_id: int | None = None
     contacts: list[DispatchContact]
 
     @model_validator(mode="after")
@@ -183,6 +185,132 @@ async def ops_resume_bot(
 @app.get("/ops/recent")
 def ops_recent(limit: int = 50):
     return {"events": recent_events(limit)}
+
+
+@app.post("/webhooks/inbound/{tenant_id}/{slug}")
+async def inbound_integration_webhook(
+    tenant_id: str,
+    slug: str,
+    request: Request,
+    background_tasks: BackgroundTasks,
+):
+    """Webhook genérico: mapeia JSON → perfil do contato e opcionalmente dispara mensagem."""
+    from harness_platform.contact_service import upsert_contact
+    from harness_platform.db import SessionLocal
+    from harness_platform.integration_service import get_inbound_webhook_by_slug, map_inbound_payload
+    from harness_platform.phone_utils import normalize_phone
+    from harness_platform.template_vars import profile_variables, render_template
+
+    secret = (
+        request.headers.get("X-Webhook-Secret")
+        or request.headers.get("X-Harness-Secret")
+        or request.query_params.get("secret")
+        or ""
+    )
+    try:
+        payload = await request.json()
+    except Exception as error:
+        raise HTTPException(status_code=400, detail="JSON inválido") from error
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Payload deve ser um objeto JSON")
+
+    db = SessionLocal()
+    try:
+        webhook = get_inbound_webhook_by_slug(db, tenant_id, slug)
+        if not webhook:
+            raise HTTPException(status_code=404, detail="Webhook não encontrado")
+        if secret != webhook.secret:
+            raise HTTPException(status_code=401, detail="Secret inválido")
+
+        mapped = map_inbound_payload(webhook, payload)
+        phone = normalize_phone(
+            str(mapped.get("phone") or mapped.get("telefone") or payload.get("phone") or "")
+        )
+        if not phone:
+            raise HTTPException(
+                status_code=400,
+                detail="Telefone não encontrado. Mapeie phone/telefone no field_mapping.",
+            )
+
+        name = str(mapped.pop("nome", None) or mapped.pop("name", None) or "")
+        email = str(mapped.pop("email", None) or "")
+        conversation_id_raw = mapped.pop("conversation_id", None)
+        agent_id_raw = mapped.pop("agent_id", None) or payload.get("agent_id")
+        flow_id_raw = mapped.pop("flow_id", None) or payload.get("flow_id")
+        fields = {
+            k: v
+            for k, v in mapped.items()
+            if k not in {"phone", "telefone", "agent_id", "flow_id"}
+        }
+        if agent_id_raw is not None:
+            try:
+                fields["_preferred_agent_id"] = int(agent_id_raw)
+            except (TypeError, ValueError):
+                pass
+        if flow_id_raw is not None:
+            try:
+                fields["_preferred_flow_id"] = int(flow_id_raw)
+            except (TypeError, ValueError):
+                pass
+
+        profile = upsert_contact(
+            db,
+            tenant_id,
+            phone,
+            name=name or None,
+            email=email or None,
+            fields=fields or None,
+            last_conversation_id=int(conversation_id_raw) if conversation_id_raw else None,
+        )
+
+        dispatch_result = None
+        if webhook.start_conversation:
+            conv_id = profile.get("last_conversation_id") or (
+                int(conversation_id_raw) if conversation_id_raw else None
+            )
+            if conv_id:
+                tenant = get_tenant(tenant_id)
+                account_ids = tenant.routing.chatwoot_account_ids or []
+                account_id = account_ids[0] if account_ids else None
+                if account_id is None:
+                    try:
+                        account_id = default_account_id()
+                    except ValueError:
+                        account_id = None
+                message = render_template(
+                    webhook.initial_message or "Olá {{nome}}!",
+                    profile_variables(profile),
+                )
+                if account_id and message:
+                    async def _send():
+                        await send_message(
+                            account_id,
+                            int(conv_id),
+                            message,
+                            bot_token=tenant.routing.chatwoot_bot_token or None,
+                        )
+
+                    background_tasks.add_task(_send)
+                    dispatch_result = {"queued": True, "conversation_id": conv_id}
+                else:
+                    dispatch_result = {
+                        "queued": False,
+                        "reason": "conversation_id ou account_id ausente",
+                    }
+            else:
+                dispatch_result = {
+                    "queued": False,
+                    "reason": "informe conversation_id no mapping ou no payload para iniciar conversa",
+                }
+
+        return {
+            "ok": True,
+            "contact": profile,
+            "mapped_fields": fields,
+            "dispatch": dispatch_result,
+        }
+    finally:
+        db.close()
 
 
 @app.post("/webhooks/chatwoot")
@@ -331,6 +459,33 @@ async def dispatch_messages(body: DispatchRequest):
                 )
 
             ok = bool(response.get("ok"))
+            if ok and body.tenant_id and (body.agent_id or body.flow_id):
+                try:
+                    from harness_platform.contact_service import update_contact
+                    from harness_platform.db import SessionLocal
+                    from harness_platform.models import ContactProfile
+
+                    db = SessionLocal()
+                    try:
+                        row = (
+                            db.query(ContactProfile)
+                            .filter(
+                                ContactProfile.tenant_id == body.tenant_id,
+                                ContactProfile.last_conversation_id == contact.conversation_id,
+                            )
+                            .first()
+                        )
+                        if row:
+                            prefs = dict(row.fields or {})
+                            if body.agent_id:
+                                prefs["_preferred_agent_id"] = body.agent_id
+                            if body.flow_id:
+                                prefs["_preferred_flow_id"] = body.flow_id
+                            update_contact(db, body.tenant_id, row.id, {"fields": prefs})
+                    finally:
+                        db.close()
+                except Exception:
+                    logger.warning("Não foi possível gravar preferência de Flow no dispatch", exc_info=True)
             results.append(
                 DispatchResult(
                     conversation_id=contact.conversation_id,

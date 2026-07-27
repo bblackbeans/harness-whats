@@ -42,41 +42,41 @@ export default function PortalDashboardPage() {
   return (
     <PortalShell>
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Olá, {name || "..."}</h1>
-        <p className="text-sm text-gray-500">{tenantName}</p>
+        <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">Olá, {name || "..."}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tenantName}</p>
       </div>
 
-      {loading && <p className="text-sm text-gray-500">Carregando...</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Carregando...</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {!loading && !error && (
         <>
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="card">
-              <p className="text-sm text-gray-500">Modelo de IA</p>
-              <p className="mt-1 text-xl font-semibold text-gray-900">{model}</p>
-              <p className="mt-2 text-xs text-gray-400">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Modelo de IA</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-100">{model}</p>
+              <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
                 Definido pelo administrador da plataforma.
               </p>
             </div>
             <div className="card">
-              <p className="text-sm text-gray-500">Chamadas (mês)</p>
-              <p className="mt-1 text-xl font-semibold text-gray-900">{usage?.calls ?? 0}</p>
-              <p className="mt-2 text-xs text-gray-400">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Chamadas (mês)</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-100">{usage?.calls ?? 0}</p>
+              <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
                 Cada resposta do bot conta como uma chamada.
               </p>
             </div>
             <div className="card">
-              <p className="text-sm text-gray-500">Custo estimado</p>
-              <p className="mt-1 text-xl font-semibold text-gray-900">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Custo estimado</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-100">
                 ${(usage?.cost_estimate ?? 0).toFixed(4)}
               </p>
-              <p className="mt-2 text-xs text-gray-400">≈ R$ {costBrl} (cotação ~R$ 5,80)</p>
+              <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">≈ R$ {costBrl} (cotação ~R$ 5,80)</p>
             </div>
             <div className="card">
-              <p className="text-sm text-gray-500">Documentos na base</p>
-              <p className="mt-1 text-xl font-semibold text-gray-900">{docCount}</p>
-              <p className="mt-2 text-xs text-gray-400">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Documentos na base</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-100">{docCount}</p>
+              <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
                 {docCount === 0 ? (
                   <Link href="/portal/knowledge" className="text-brand-600 hover:underline">
                     Envie seu primeiro FAQ →
@@ -89,8 +89,8 @@ export default function PortalDashboardPage() {
           </div>
 
           {planName && (
-            <p className="mb-6 text-sm text-gray-500">
-              Plano atual: <span className="font-medium text-gray-700">{planName}</span>
+            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+              Plano atual: <span className="font-medium text-gray-700 dark:text-gray-300">{planName}</span>
             </p>
           )}
 

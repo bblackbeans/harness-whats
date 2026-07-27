@@ -85,10 +85,10 @@ export default function NovoClientePage() {
   return (
     <AppShell>
       <div className="mb-8">
-        <Link href="/clientes" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/clientes" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           ← Clientes
         </Link>
-        <h1 className="mt-2 text-xl font-semibold text-gray-900 sm:text-2xl">Novo cliente</h1>
+        <h1 className="mt-2 text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">Novo cliente</h1>
       </div>
 
       <div className="-mx-4 mb-8 overflow-x-auto px-4 sm:mx-0 sm:px-0">
@@ -98,10 +98,10 @@ export default function NovoClientePage() {
             key={label}
             className={`min-w-[88px] flex-1 rounded-lg border px-2 py-2 text-center text-xs font-medium sm:min-w-[100px] sm:px-3 sm:text-sm ${
               i === step
-                ? "border-brand-600 bg-brand-50 text-brand-700"
+                ? "border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-600/20 dark:text-brand-300"
                 : i < step
-                  ? "border-green-200 bg-green-50 text-green-700"
-                  : "border-gray-200 text-gray-400"
+                  ? "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/40 dark:text-green-300"
+                  : "border-gray-200 text-gray-400 dark:border-gray-800 dark:text-gray-500"
             }`}
           >
             {i + 1}. <span className="max-sm:hidden">{label}</span><span className="sm:hidden">{label.split(" ")[0]}</span>
@@ -143,7 +143,7 @@ export default function NovoClientePage() {
                 onChange={(e) => setInboxIds(e.target.value)}
                 placeholder="1, 2, 3"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Separados por vírgula. Usado para rotear mensagens ao cliente.
               </p>
             </div>
@@ -167,7 +167,7 @@ export default function NovoClientePage() {
                 onChange={(e) => setChatwootBotToken(e.target.value)}
                 placeholder="Cole o token do Agent Bot"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Encontre em Chatwoot → Configurações → Agent Bots → copiar access token.
               </p>
             </div>
@@ -198,7 +198,7 @@ export default function NovoClientePage() {
                 value={temperature}
                 onChange={(e) => setTemperature(e.target.value)}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Valores baixos (0.3) deixam o agente mais consistente; valores altos aumentam a variação
                 nas respostas.
               </p>
@@ -207,9 +207,9 @@ export default function NovoClientePage() {
         )}
         {step === 3 && (
           <>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Credenciais para o cliente acessar o portal em{" "}
-              <code className="rounded bg-gray-100 px-1 text-xs">/portal/login</code> e gerenciar
+              <code className="rounded bg-gray-100 px-1 text-xs dark:bg-gray-900">/portal/login</code> e gerenciar
               prompts, base de conhecimento e uso do chatbot.
             </p>
             <div>
@@ -249,7 +249,7 @@ export default function NovoClientePage() {
           </div>
         )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <div className="flex gap-3">
           {step > 0 && (

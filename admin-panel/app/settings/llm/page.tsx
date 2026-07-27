@@ -129,17 +129,17 @@ export default function LlmSettingsPage() {
 
   return (
     <AppShell>
-      <h1 className="mb-2 text-xl font-semibold text-gray-900 sm:text-2xl">Modelos LLM</h1>
-      <p className="mb-8 text-sm text-gray-500">
+      <h1 className="mb-2 text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">Modelos LLM</h1>
+      <p className="mb-8 text-sm text-gray-500 dark:text-gray-400">
         Cadastre provedores (OpenAI, etc.) e os modelos que os clientes podem usar.
       </p>
 
-      {message && <p className="mb-4 text-sm text-green-700">{message}</p>}
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {message && <p className="mb-4 text-sm text-green-700 dark:text-green-300">{message}</p>}
+      {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <form onSubmit={handleProvider} className="card space-y-4">
-          <h2 className="flex items-center gap-2 font-semibold text-gray-900">
+          <h2 className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
             Novo provedor
             <HelpTip text="Provedor de IA que fornece os modelos. Ex.: OpenAI com sua API Key em platform.openai.com." />
           </h2>
@@ -157,7 +157,7 @@ export default function LlmSettingsPage() {
         </form>
 
         <form onSubmit={handleModel} className="card space-y-4">
-          <h2 className="flex items-center gap-2 font-semibold text-gray-900">
+          <h2 className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
             Novo modelo
             <HelpTip text="Cada modelo corresponde a um ID da API do provedor, ex.: gpt-4o-mini." />
           </h2>
@@ -186,13 +186,13 @@ export default function LlmSettingsPage() {
       </div>
 
       <div className="card mt-8">
-        <h2 className="mb-4 flex items-center gap-2 font-semibold text-gray-900">
+        <h2 className="mb-4 flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
           Provedores cadastrados
           <HelpTip text="Clique em Editar para alterar nome, API Key ou desativar o provedor." />
         </h2>
         <div className="table-wrap">
         <table className="mb-8 w-full min-w-[400px] text-sm">
-          <thead className="text-left text-xs uppercase text-gray-500">
+          <thead className="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
             <tr>
               <th className="pb-2">Nome</th>
               <th className="pb-2">Tipo</th>
@@ -200,11 +200,11 @@ export default function LlmSettingsPage() {
               <th className="pb-2" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {providers.map((p) => (
               <tr key={p.id}>
                 <td className="py-2 font-medium">{p.name}</td>
-                <td className="py-2 text-gray-500">{p.provider_type}</td>
+                <td className="py-2 text-gray-500 dark:text-gray-400">{p.provider_type}</td>
                 <td className="py-2">{p.active ? "Ativo" : "Inativo"}</td>
                 <td className="py-2 text-right">
                   <button
@@ -228,13 +228,13 @@ export default function LlmSettingsPage() {
         </table>
         </div>
 
-        <h2 className="mb-4 flex items-center gap-2 font-semibold text-gray-900">
+        <h2 className="mb-4 flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
           Modelos cadastrados
           <HelpTip text="Modelos disponíveis para associar aos clientes. Edite custos para métricas mais precisas." />
         </h2>
         <div className="table-wrap">
         <table className="w-full min-w-[560px] text-sm">
-          <thead className="text-left text-xs uppercase text-gray-500">
+          <thead className="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
             <tr>
               <th className="pb-2">Nome</th>
               <th className="pb-2">Provedor</th>
@@ -243,13 +243,13 @@ export default function LlmSettingsPage() {
               <th className="pb-2" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {models.map((m) => (
               <tr key={m.id}>
                 <td className="py-2">{m.display_name}</td>
-                <td className="py-2 text-gray-600">{getProviderName(m.provider_id)}</td>
-                <td className="py-2 text-gray-500">{m.model_id}</td>
-                <td className="py-2 text-gray-500">
+                <td className="py-2 text-gray-600 dark:text-gray-300">{getProviderName(m.provider_id)}</td>
+                <td className="py-2 text-gray-500 dark:text-gray-400">{m.model_id}</td>
+                <td className="py-2 text-gray-500 dark:text-gray-400">
                   ${m.cost_per_1m_input} / ${m.cost_per_1m_output}
                 </td>
                 <td className="py-2 text-right">
@@ -287,7 +287,7 @@ export default function LlmSettingsPage() {
             <div>
               <FieldLabel label="API Key atual" help="Chave configurada no provedor (parcialmente mascarada por segurança)." />
               <input
-                className="input-field bg-gray-50 font-mono text-sm"
+                className="input-field bg-gray-50 font-mono text-sm dark:bg-gray-950"
                 value={editProviderKeyPreview || "Nenhuma chave cadastrada"}
                 readOnly
               />

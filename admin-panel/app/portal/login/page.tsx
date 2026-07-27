@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { portalLogin } from "@/lib/portal-api";
 import { FieldLabel } from "@/components/HelpTip";
 import { PasswordInput } from "@/components/PasswordInput";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function PortalLoginPage() {
   const router = useRouter();
@@ -39,14 +40,17 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle compact />
+      </div>
       <div className="card w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">
             H
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900">Portal do Cliente</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Portal do Cliente</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Personalize como seu chatbot responde e o conteúdo que ele usa nas conversas
           </p>
         </div>
@@ -78,13 +82,13 @@ export default function PortalLoginPage() {
             />
           </div>
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-400">{error}</p>
           )}
           <button type="submit" className="btn-primary w-full" disabled={loading}>
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
           É administrador?{" "}
           <Link href="/login" className="font-medium text-brand-600 hover:text-brand-700">
             Acessar painel admin

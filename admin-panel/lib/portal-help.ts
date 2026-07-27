@@ -1,10 +1,10 @@
 export const PORTAL_PROMPT_HELP: Record<string, { title: string; description: string; help: string; example: string }> = {
   agent_system: {
-    title: "Agente",
+    title: "Agente (legado / sync)",
     description:
-      "Define a personalidade e as regras do seu assistente virtual — tom de voz, o que pode ou não responder e como se comportar com clientes.",
+      "Espelho do prompt do agente padrão especializado. Prefira editar em Automação → Agentes. Fatos, Resumo e Conhecimento continuam no nível da empresa.",
     help:
-      "Este é o prompt principal. Descreva quem é o bot, o tom (formal, amigável), o que ele vende ou explica e limites (ex.: não inventar preços). O sistema adiciona automaticamente instruções técnicas de formato; escreva em linguagem natural.",
+      "A personalidade operacional fica em cada Agente. Esta aba sincroniza com o especialista marcado como padrão. Use Fatos/Resumo para regras de negócio compartilhadas.",
     example:
       "Ex.: «Você é o assistente da Minha Empresa. Responda em português, de forma clara e objetiva. Use apenas informações da base de conhecimento. Se não souber, diga que vai encaminhar para um atendente.»",
   },

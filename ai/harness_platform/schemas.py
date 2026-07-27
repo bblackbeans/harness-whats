@@ -204,3 +204,157 @@ class ProblemaResponse(BaseModel):
 class ProblemaFeedbackResponse(BaseModel):
     id: str
     correlation_id: str
+
+
+class CustomFieldCreate(BaseModel):
+    key: str
+    label: str
+    field_type: str = "text"
+    required: bool = False
+    sort_order: int = 0
+
+
+class CustomFieldUpdate(BaseModel):
+    label: str | None = None
+    field_type: str | None = None
+    required: bool | None = None
+    sort_order: int | None = None
+
+
+class ContactUpdate(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    fields: dict[str, Any] | None = None
+
+
+class ContactCreate(BaseModel):
+    phone: str
+    name: str = ""
+    email: str = ""
+    fields: dict[str, Any] = Field(default_factory=dict)
+
+
+class InboundWebhookCreate(BaseModel):
+    name: str
+    slug: str | None = None
+    field_mapping: dict[str, str] = Field(default_factory=dict)
+    start_conversation: bool = False
+    initial_message: str = ""
+    active: bool = True
+
+
+class InboundWebhookUpdate(BaseModel):
+    name: str | None = None
+    field_mapping: dict[str, str] | None = None
+    start_conversation: bool | None = None
+    initial_message: str | None = None
+    active: bool | None = None
+
+
+class HttpToolCreate(BaseModel):
+    name: str
+    slug: str | None = None
+    method: str = "POST"
+    url: str
+    headers: dict[str, str] = Field(default_factory=dict)
+    body_template: str = ""
+    include_fields: list[str] = Field(default_factory=list)
+    auth_header: str = ""
+    description: str = ""
+    active: bool = True
+
+
+class HttpToolUpdate(BaseModel):
+    name: str | None = None
+    method: str | None = None
+    url: str | None = None
+    headers: dict[str, str] | None = None
+    body_template: str | None = None
+    include_fields: list[str] | None = None
+    auth_header: str | None = None
+    description: str | None = None
+    active: bool | None = None
+
+
+class SendableFileUpdate(BaseModel):
+    description: str = ""
+
+
+class AgentCreate(BaseModel):
+    name: str
+    description: str = ""
+    system_prompt: str = ""
+    role: str = "specialist"
+    is_default: bool = False
+    active: bool = True
+
+
+class AgentUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    system_prompt: str | None = None
+    role: str | None = None
+    is_default: bool | None = None
+    active: bool | None = None
+
+
+class AgentToolBindingItem(BaseModel):
+    tool_kind: str
+    tool_ref: str = "*"
+
+
+class AgentToolBindingsUpdate(BaseModel):
+    bindings: list[AgentToolBindingItem] = Field(default_factory=list)
+
+
+class AgentToolCreate(BaseModel):
+    agent_id: int
+    name: str
+    slug: str = ""
+    kind: str = "instruction"
+    rules: str = ""
+    method: str = "POST"
+    url: str = ""
+    headers: dict[str, Any] = Field(default_factory=dict)
+    body_template: str = ""
+    auth_header: str = ""
+    file_ids: list[int] = Field(default_factory=list)
+    active: bool = True
+
+
+class AgentToolUpdate(BaseModel):
+    agent_id: int | None = None
+    name: str | None = None
+    slug: str | None = None
+    kind: str | None = None
+    rules: str | None = None
+    method: str | None = None
+    url: str | None = None
+    headers: dict[str, Any] | None = None
+    body_template: str | None = None
+    auth_header: str | None = None
+    file_ids: list[int] | None = None
+    active: bool | None = None
+
+
+class FlowCreate(BaseModel):
+    name: str
+    agent_id: int | None = None
+    description: str = ""
+    base_prompt: str = ""
+    status: str = "draft"
+    is_default: bool = False
+
+
+class FlowUpdate(BaseModel):
+    name: str | None = None
+    agent_id: int | None = None
+    description: str | None = None
+    base_prompt: str | None = None
+    status: str | None = None
+    is_default: bool | None = None
+    roteiro: dict[str, Any] | None = None
+    checklist: list[Any] | None = None
+    import_summary: dict[str, Any] | None = None
+

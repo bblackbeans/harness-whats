@@ -42,11 +42,11 @@ export default function UsagePage() {
 
   return (
     <AppShell>
-      <h1 className="mb-2 text-xl font-semibold text-gray-900 sm:text-2xl">Métricas de uso</h1>
-      <p className="mb-6 text-sm text-gray-500 sm:mb-8">Consumo LLM no mês corrente</p>
+      <h1 className="mb-2 text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">Métricas de uso</h1>
+      <p className="mb-6 text-sm text-gray-500 sm:mb-8 dark:text-gray-400">Consumo LLM no mês corrente</p>
 
       <div className="mb-4">
-        <label className="mb-1.5 block text-sm text-gray-600 sm:mb-0 sm:mr-2 sm:inline">Filtrar cliente:</label>
+        <label className="mb-1.5 block text-sm text-gray-600 sm:mb-0 sm:mr-2 sm:inline dark:text-gray-300">Filtrar cliente:</label>
         <select
           className="input-field w-full sm:inline-block sm:w-auto"
           value={filterCliente}
@@ -63,15 +63,15 @@ export default function UsagePage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="card">
-          <p className="text-sm text-gray-500">Chamadas LLM (mês)</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Chamadas LLM (mês)</p>
           <p className="mt-1 text-3xl font-semibold">{loading ? "…" : totalCalls}</p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500">Custo estimado</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Custo estimado</p>
           <p className="mt-1 text-3xl font-semibold">{loading ? "…" : `$${totalCost.toFixed(4)}`}</p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500">Clientes com uso</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Clientes com uso</p>
           <p className="mt-1 text-3xl font-semibold">{loading ? "…" : summary.length}</p>
         </div>
       </div>
@@ -81,17 +81,17 @@ export default function UsagePage() {
           <h2 className="mb-4 font-semibold">Por cliente</h2>
           <div className="table-wrap">
           <table className="w-full min-w-[280px] text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
+            <thead className="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="pb-2">Cliente</th>
                 <th className="pb-2">Chamadas</th>
                 <th className="pb-2">Custo</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {summary.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="py-4 text-center text-gray-500">
+                  <td colSpan={3} className="py-4 text-center text-gray-500 dark:text-gray-400">
                     {loading ? "Carregando…" : "Sem uso no período"}
                   </td>
                 </tr>
@@ -113,17 +113,17 @@ export default function UsagePage() {
           <h2 className="mb-4 font-semibold">Por modelo</h2>
           <div className="table-wrap">
           <table className="w-full min-w-[280px] text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
+            <thead className="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="pb-2">Modelo</th>
                 <th className="pb-2">Chamadas</th>
                 <th className="pb-2">Custo</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {byModel.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="py-4 text-center text-gray-500">
+                  <td colSpan={3} className="py-4 text-center text-gray-500 dark:text-gray-400">
                     {loading ? "Carregando…" : "Sem uso no período"}
                   </td>
                 </tr>
@@ -145,17 +145,17 @@ export default function UsagePage() {
           <h2 className="mb-4 font-semibold">Série diária (30 dias)</h2>
           <div className="table-wrap">
           <table className="w-full min-w-[280px] text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
+            <thead className="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="pb-2">Data</th>
                 <th className="pb-2">Chamadas</th>
                 <th className="pb-2">Custo</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {daily.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="py-4 text-center text-gray-500">
+                  <td colSpan={3} className="py-4 text-center text-gray-500 dark:text-gray-400">
                     {loading ? "Carregando…" : "Sem uso no período"}
                   </td>
                 </tr>

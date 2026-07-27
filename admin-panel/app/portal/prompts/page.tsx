@@ -58,8 +58,8 @@ export default function PortalPromptsPage() {
 
   return (
     <PortalShell>
-      <h1 className="mb-2 text-xl font-semibold text-gray-900 sm:text-2xl">Prompts</h1>
-      <p className="mb-6 text-sm text-gray-500">
+      <h1 className="mb-2 text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">Prompts</h1>
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
         Instruções que definem como o seu chatbot responde nas conversas.
       </p>
 
@@ -69,14 +69,14 @@ export default function PortalPromptsPage() {
           <strong>Agente</strong> é o principal — descreva quem é o bot, o tom de voz e o que ele
           pode ou não responder.
         </p>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-300">
           Escreva em português claro, como se estivesse treinando um atendente. Não é necessário
           usar códigos ou comandos especiais.
         </p>
       </PortalGuide>
 
       <div className="-mx-4 mb-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div className="flex min-w-max flex-nowrap gap-2 border-b border-gray-200">
+        <div className="flex min-w-max flex-nowrap gap-2 border-b border-gray-200 dark:border-gray-800">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -92,10 +92,10 @@ export default function PortalPromptsPage() {
         </div>
       </div>
 
-      <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50/80 p-4 text-sm text-gray-600">
-        <p className="font-medium text-gray-800">{tabHelp.title}</p>
+      <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50/80 p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900/80 dark:text-gray-300">
+        <p className="font-medium text-gray-800 dark:text-gray-200">{tabHelp.title}</p>
         <p className="mt-1">{tabHelp.description}</p>
-        <p className="mt-2 text-xs italic text-gray-500">{tabHelp.example}</p>
+        <p className="mt-2 text-xs italic text-gray-500 dark:text-gray-400">{tabHelp.example}</p>
       </div>
 
       <form onSubmit={handleSave} className="card space-y-4">
@@ -106,8 +106,8 @@ export default function PortalPromptsPage() {
           onChange={(e) => setContent(e.target.value)}
           placeholder="Descreva aqui como o bot deve se comportar..."
         />
-        {message && <p className="text-sm text-green-700">{message}</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {message && <p className="text-sm text-green-700 dark:text-green-300">{message}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button type="submit" className="btn-primary" disabled={saving}>
           {saving ? "Salvando..." : "Salvar prompt"}
         </button>

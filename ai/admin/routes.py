@@ -77,10 +77,24 @@ from harness_platform.portal_service import (
     reject_model_change_request,
 )
 from harness_platform.problema_service import delete_problema, get_problema, list_problemas, update_problema
+from harness_platform.crm_routes import build_crm_routes
+from harness_platform.flow_routes import build_flow_routes
 from knowledge import sync_tenant_index
 from tenants.registry import reload_tenants
 
 router = APIRouter(prefix="/admin/api", tags=["admin"])
+
+
+def _admin_tenant_id(tenant_id: str, _admin: AdminUser = Depends(get_current_admin)) -> str:
+    return tenant_id
+
+
+router.include_router(
+    build_crm_routes(get_tenant_id=_admin_tenant_id, prefix="/tenants/{tenant_id}/crm")
+)
+router.include_router(
+    build_flow_routes(get_tenant_id=_admin_tenant_id, prefix="/tenants/{tenant_id}")
+)
 
 
 @router.post("/auth/login", response_model=TokenResponse)

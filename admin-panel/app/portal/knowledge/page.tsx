@@ -59,8 +59,8 @@ export default function PortalKnowledgePage() {
     <PortalShell>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Base de conhecimento</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">Base de conhecimento</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Materiais que o seu chatbot consulta antes de responder aos clientes.
           </p>
         </div>
@@ -100,19 +100,19 @@ export default function PortalKnowledgePage() {
       <PortalGuide title={PORTAL_KNOWLEDGE_INTRO.title} className="mb-6">
         <p>{PORTAL_KNOWLEDGE_INTRO.body}</p>
         <p>
-          <strong className="text-gray-800">{PORTAL_KNOWLEDGE_INTRO.formats}</strong>
+          <strong className="text-gray-800 dark:text-gray-200">{PORTAL_KNOWLEDGE_INTRO.formats}</strong>
         </p>
         <div>
-          <p className="font-medium text-gray-800">Exemplos do que enviar:</p>
-          <ul className="mt-1 list-inside list-disc space-y-0.5 text-gray-600">
+          <p className="font-medium text-gray-800 dark:text-gray-200">Exemplos do que enviar:</p>
+          <ul className="mt-1 list-inside list-disc space-y-0.5 text-gray-600 dark:text-gray-300">
             {PORTAL_KNOWLEDGE_INTRO.examples.map((ex) => (
               <li key={ex}>{ex}</li>
             ))}
           </ul>
         </div>
         <div>
-          <p className="font-medium text-gray-800">Dicas:</p>
-          <ul className="mt-1 list-inside list-disc space-y-0.5 text-gray-600">
+          <p className="font-medium text-gray-800 dark:text-gray-200">Dicas:</p>
+          <ul className="mt-1 list-inside list-disc space-y-0.5 text-gray-600 dark:text-gray-300">
             {PORTAL_KNOWLEDGE_INTRO.tips.map((tip) => (
               <li key={tip}>{tip}</li>
             ))}
@@ -120,38 +120,38 @@ export default function PortalKnowledgePage() {
         </div>
       </PortalGuide>
 
-      {loading && <p className="text-sm text-gray-500">Carregando...</p>}
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-      {success && <p className="mb-4 text-sm text-green-700">{success}</p>}
+      {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Carregando...</p>}
+      {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {success && <p className="mb-4 text-sm text-green-700 dark:text-green-300">{success}</p>}
 
       <div className="card overflow-hidden p-0">
         {files.length === 0 ? (
-          <div className="p-6 text-sm text-gray-500">
+          <div className="p-6 text-sm text-gray-500 dark:text-gray-400">
             <p>Nenhum documento enviado ainda.</p>
             <p className="mt-2">
-              Comece com um arquivo <code className="rounded bg-gray-100 px-1">faq.md</code> com as
+              Comece com um arquivo <code className="rounded bg-gray-100 px-1 dark:bg-gray-900">faq.md</code> com as
               perguntas mais comuns e respostas da sua empresa.
             </p>
           </div>
         ) : (
           <div className="table-wrap">
             <table className="w-full min-w-[400px] text-left text-sm">
-              <thead className="bg-gray-50 text-xs font-medium uppercase text-gray-500">
+              <thead className="bg-gray-50 text-xs font-medium uppercase text-gray-500 dark:bg-gray-950 dark:text-gray-400">
                 <tr>
                   <th className="px-6 py-3">Arquivo</th>
                   <th className="px-6 py-3">Tamanho</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {files.map((f) => (
                   <tr key={f.name}>
                     <td className="px-6 py-4 font-medium">{f.name}</td>
-                    <td className="px-6 py-4 text-gray-500">{Math.round(f.size / 1024)} KB</td>
+                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{Math.round(f.size / 1024)} KB</td>
                     <td className="px-6 py-4 text-right">
                       <button
                         type="button"
-                        className="text-sm text-red-600"
+                        className="text-sm text-red-600 dark:text-red-400"
                         onClick={() => handleDelete(f.name).catch((e) => setError(e.message))}
                       >
                         Remover

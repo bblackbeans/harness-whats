@@ -80,7 +80,7 @@ export function ScreenshotPreview({
     <>
       <button
         type="button"
-        className="group relative block w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 text-left transition hover:border-brand-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-brand-100"
+        className="group relative block w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 text-left transition hover:border-brand-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-brand-100 dark:border-gray-800 dark:bg-gray-950 dark:hover:border-brand-600 dark:focus:ring-brand-600/30"
         onClick={(e) => {
           e.stopPropagation();
           setOpen(true);

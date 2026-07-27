@@ -18,6 +18,24 @@ class HarnessState(TypedDict):
     conversation_summary: str
     semantic_facts: list[str]
     new_semantic_facts: list[str]
+    contact_profile: dict
+    field_updates: dict
+    http_tool_calls: list[str]
+    files_to_send: list[str]
+    agent_id: int | None
+    flow_id: int | None
+    flow_run_id: int | None
+    agent_system_prompt: str
+    flow_roteiro: dict
+    flow_checklist: list
+    flow_checklist_state: dict
+    flow_base_prompt: str
+    checklist_updates: dict
+    override_agent_id: int | None
+    override_flow_id: int | None
+    allowed_tools: dict
+    transfer_to_agent: object
+    return_to_orchestrator: bool
     agent_context: str
     retrieved_knowledge: list[str]
     handoff_to_human: bool

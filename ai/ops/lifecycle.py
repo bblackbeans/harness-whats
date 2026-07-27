@@ -21,6 +21,8 @@ class Lifecycle:
     FAILED = "failed"
     DUPLICATE = "duplicate"
     WEBHOOK_IGNORED = "webhook_ignored"
+    AGENT_SELECTED = "agent_selected"
+    TOOL_EXECUTED = "tool_executed"
 
 
 STATUS_LABELS: dict[str, str] = {
@@ -33,6 +35,8 @@ STATUS_LABELS: dict[str, str] = {
     Lifecycle.FAILED: "Falha",
     Lifecycle.DUPLICATE: "Duplicado",
     Lifecycle.WEBHOOK_IGNORED: "Webhook ignorado",
+    Lifecycle.AGENT_SELECTED: "Agente selecionado",
+    Lifecycle.TOOL_EXECUTED: "Tool executada",
 }
 
 DIRECTION_BY_STATUS: dict[str, str] = {
@@ -45,6 +49,8 @@ DIRECTION_BY_STATUS: dict[str, str] = {
     Lifecycle.FAILED: "system",
     Lifecycle.DUPLICATE: "system",
     Lifecycle.WEBHOOK_IGNORED: "system",
+    Lifecycle.AGENT_SELECTED: "system",
+    Lifecycle.TOOL_EXECUTED: "system",
 }
 
 IGNORED_REASON_LABELS: dict[str, str] = {

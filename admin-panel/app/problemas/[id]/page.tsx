@@ -20,15 +20,15 @@ function JsonBlock({ title, data }: { title: string; data: unknown }) {
   if (!data || (Array.isArray(data) && data.length === 0)) {
     return (
       <div>
-        <h3 className="mb-2 text-sm font-medium text-gray-800">{title}</h3>
-        <p className="text-sm text-gray-500">Nenhum registro.</p>
+        <h3 className="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">{title}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum registro.</p>
       </div>
     );
   }
   return (
     <div>
-      <h3 className="mb-2 text-sm font-medium text-gray-800">{title}</h3>
-      <pre className="max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
+      <h3 className="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">{title}</h3>
+      <pre className="max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-950 dark:text-gray-300">
         {JSON.stringify(data, null, 2)}
       </pre>
     </div>
@@ -98,7 +98,7 @@ export default function ProblemaDetailPage() {
   if (loading) {
     return (
       <AppShell>
-        <p className="text-gray-500">Carregando...</p>
+        <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
       </AppShell>
     );
   }
@@ -106,8 +106,8 @@ export default function ProblemaDetailPage() {
   if (!problema) {
     return (
       <AppShell>
-        <p className="text-red-600">{error || "Problema não encontrado"}</p>
-        <Link href="/problemas" className="mt-4 inline-block text-brand-700 hover:underline">
+        <p className="text-red-600 dark:text-red-400">{error || "Problema não encontrado"}</p>
+        <Link href="/problemas" className="mt-4 inline-block text-brand-700 hover:underline dark:text-brand-300">
           Voltar à lista
         </Link>
       </AppShell>
@@ -121,11 +121,11 @@ export default function ProblemaDetailPage() {
   return (
     <AppShell>
       <div className="mb-6">
-        <Link href="/problemas" className="text-sm text-brand-700 hover:underline">
+        <Link href="/problemas" className="text-sm text-brand-700 hover:underline dark:text-brand-300">
           ← Voltar aos problemas
         </Link>
-        <h1 className="mt-2 text-xl font-semibold text-gray-900 sm:text-2xl">{problema.titulo}</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="mt-2 text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">{problema.titulo}</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {formatBrasiliaDateTime(problema.criado_em)} · {problema.tenant_name}
           {problema.usuario_email ? ` · ${problema.usuario_name || problema.usuario_email}` : ""}
         </p>
@@ -134,14 +134,14 @@ export default function ProblemaDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <section className="card">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">Descrição</h2>
-            <p className="whitespace-pre-wrap text-sm text-gray-700">{problema.descricao}</p>
+            <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Descrição</h2>
+            <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{problema.descricao}</p>
           </section>
 
           {(problema.passos || (typeof ctx.passos === "string" && ctx.passos)) && (
             <section className="card">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900">Passos para reproduzir</h2>
-              <p className="whitespace-pre-wrap text-sm text-gray-700">
+              <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Passos para reproduzir</h2>
+              <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
                 {problema.passos || (typeof ctx.passos === "string" ? ctx.passos : "")}
               </p>
             </section>
@@ -149,8 +149,8 @@ export default function ProblemaDetailPage() {
 
           {problema.url && (
             <section className="card">
-              <h2 className="mb-2 text-sm font-semibold text-gray-900">URL</h2>
-              <a href={problema.url} target="_blank" rel="noreferrer" className="break-all text-sm text-brand-700">
+              <h2 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">URL</h2>
+              <a href={problema.url} target="_blank" rel="noreferrer" className="break-all text-sm text-brand-700 dark:text-brand-300">
                 {problema.url}
               </a>
             </section>
@@ -158,7 +158,7 @@ export default function ProblemaDetailPage() {
 
           {screenshot?.data && (
             <section className="card">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900">Screenshot</h2>
+              <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Screenshot</h2>
               <ScreenshotPreview
                 src={screenshot.data}
                 alt="Screenshot do reporte"
@@ -169,7 +169,7 @@ export default function ProblemaDetailPage() {
 
           {recording?.data && (
             <section className="card">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900">
+              <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
                 Gravação de tela
                 {recording.duration_ms ? ` (${Math.round(recording.duration_ms / 1000)}s)` : ""}
               </h2>
@@ -180,28 +180,28 @@ export default function ProblemaDetailPage() {
           )}
 
           <section className="card space-y-4">
-            <h2 className="text-sm font-semibold text-gray-900">Contexto técnico</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Contexto técnico</h2>
             <JsonBlock title="Erros JavaScript" data={ctx.js_errors} />
             <JsonBlock title="Requisições com falha" data={ctx.failed_requests} />
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <h3 className="mb-1 text-sm font-medium text-gray-800">Viewport</h3>
-                <p className="text-sm text-gray-600">{JSON.stringify(ctx.viewport || {})}</p>
+                <h3 className="mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">Viewport</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{JSON.stringify(ctx.viewport || {})}</p>
               </div>
               <div>
-                <h3 className="mb-1 text-sm font-medium text-gray-800">User-Agent</h3>
-                <p className="break-all text-xs text-gray-600">{String(ctx.user_agent || "—")}</p>
+                <h3 className="mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">User-Agent</h3>
+                <p className="break-all text-xs text-gray-600 dark:text-gray-300">{String(ctx.user_agent || "—")}</p>
               </div>
             </div>
-            <p className="text-xs text-gray-500">Correlation ID: {problema.correlation_id}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Correlation ID: {problema.correlation_id}</p>
           </section>
         </div>
 
         <div>
           <form onSubmit={handleSave} className="card space-y-4">
-            <h2 className="text-sm font-semibold text-gray-900">Triagem</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Triagem</h2>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
               <select className="input-field w-full" value={status} onChange={(e) => setStatus(e.target.value)}>
                 {STATUS_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -211,7 +211,7 @@ export default function ProblemaDetailPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Notas internas</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Notas internas</label>
               <textarea
                 className="input-field w-full min-h-[120px]"
                 maxLength={8000}
@@ -220,14 +220,14 @@ export default function ProblemaDetailPage() {
                 placeholder="Anotações visíveis só para administradores"
               />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            {saved && <p className="text-sm text-green-700">Salvo com sucesso.</p>}
+            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+            {saved && <p className="text-sm text-green-700 dark:text-green-300">Salvo com sucesso.</p>}
             <button type="submit" className="btn-primary w-full" disabled={saving}>
               {saving ? "Salvando..." : "Salvar"}
             </button>
             <button
               type="button"
-              className="btn-secondary w-full border-red-200 text-red-700 hover:bg-red-50"
+              className="btn-secondary w-full border-red-200 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50"
               onClick={() => setDeleteOpen(true)}
             >
               Excluir problema

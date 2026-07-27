@@ -10,45 +10,55 @@ import { formatBrasiliaDateTime } from "@/lib/datetime";
 const PAGE_SIZE = 20;
 
 const STATUS_STYLES: Record<string, string> = {
-  received: "bg-blue-50 text-blue-700",
-  replied: "bg-green-50 text-green-700",
-  failed: "bg-red-50 text-red-700",
-  processing: "bg-amber-50 text-amber-700",
-  handed_off: "bg-purple-50 text-purple-700",
-  bot_resumed: "bg-teal-50 text-teal-700",
-  ignored: "bg-gray-100 text-gray-600",
-  webhook_ignored: "bg-gray-100 text-gray-600",
-  duplicate: "bg-gray-100 text-gray-500",
+  received: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  replied: "bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  failed: "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
+  processing: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  handed_off: "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  bot_resumed: "bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
+  ignored: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300",
+  webhook_ignored: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300",
+  duplicate: "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400",
+  agent_selected: "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300",
+  tool_executed: "bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
 };
 
 function DirectionIcon({ direction }: { direction: OpsLogEvent["direction"] }) {
   if (direction === "inbound") return <ArrowDownLeft className="h-4 w-4 text-blue-600" />;
-  if (direction === "outbound") return <ArrowUpRight className="h-4 w-4 text-green-600" />;
-  return <CircleDot className="h-4 w-4 text-gray-400" />;
+  if (direction === "outbound") return <ArrowUpRight className="h-4 w-4 text-green-600 dark:text-green-400" />;
+  return <CircleDot className="h-4 w-4 text-gray-400 dark:text-gray-500" />;
 }
 
 function LogsLegend() {
   return (
-    <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-      <p className="mb-2 font-medium text-gray-800">Legenda</p>
+    <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300">
+      <p className="mb-2 font-medium text-gray-800 dark:text-gray-200">Legenda</p>
       <ul className="space-y-1">
         <li>
-          <span className="font-medium text-blue-700">Mensagem recebida</span> — cliente enviou mensagem e o
+          <span className="font-medium text-blue-700 dark:text-blue-300">Mensagem recebida</span> — cliente enviou mensagem e o
           harness aceitou o webhook.
         </li>
         <li>
-          <span className="font-medium text-green-700">Resposta enviada</span> — bot respondeu no Chatwoot.
+          <span className="font-medium text-green-700 dark:text-green-300">Resposta enviada</span> — bot respondeu no Chatwoot.
         </li>
         <li>
-          <span className="font-medium text-red-700">Falha</span> — erro no processamento (veja o detalhe).
+          <span className="font-medium text-red-700 dark:text-red-400">Falha</span> — erro no processamento (veja o detalhe).
         </li>
         <li>
-          <span className="font-medium text-gray-700">Webhook ignorado</span> — Chatwoot chamou o webhook, mas a
+          <span className="font-medium text-gray-700 dark:text-gray-300">Webhook ignorado</span> — Chatwoot chamou o webhook, mas a
           mensagem foi descartada (ex.: atendente humano ativo, mensagem vazia).
         </li>
+        <li>
+          <span className="font-medium text-indigo-700 dark:text-indigo-300">Agente selecionado</span> — orquestrador, sticky ou
+          transferência escolheu o especialista da conversa.
+        </li>
+        <li>
+          <span className="font-medium text-cyan-700 dark:text-cyan-300">Tool executada</span> — HTTP, envio de arquivo, salvar
+          campo ou transferência entre agentes.
+        </li>
       </ul>
-      <p className="mt-3 border-t border-gray-200 pt-3 text-xs text-gray-500">
-        <strong className="text-gray-700">Chatwoot:</strong> conversas do bot ficam em{" "}
+      <p className="mt-3 border-t border-gray-200 pt-3 text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
+        <strong className="text-gray-700 dark:text-gray-300">Chatwoot:</strong> conversas do bot ficam em{" "}
         <em>Abertas</em> e aparecem na tela inicial. Handoff aplica a etiqueta configurada no cliente
         e o bot para de responder até alguém clicar Resolver.
       </p>
@@ -109,8 +119,8 @@ export default function LogsPage() {
     <AppShell>
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Logs de mensagens</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">Logs de mensagens</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Acompanhe mensagens recebidas do Chatwoot, respostas enviadas e falhas de processamento.
           </p>
         </div>
@@ -124,7 +134,7 @@ export default function LogsPage() {
 
       <div className="card mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label className="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+          <label className="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
             Cliente
             <HelpTip text="Filtra os eventos pelo cliente roteado via Account/Inbox ID no Chatwoot." />
           </label>
@@ -141,7 +151,7 @@ export default function LogsPage() {
             ))}
           </select>
         </div>
-        <label className="flex items-center gap-2 text-sm text-gray-600">
+        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
           <input
             type="checkbox"
             checked={autoRefresh}
@@ -151,12 +161,12 @@ export default function LogsPage() {
         </label>
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="card">
         <div className="table-wrap">
           <table className="w-full min-w-[720px] text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
+            <thead className="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="pb-2 pr-3">Hora</th>
                 <th className="pb-2 pr-3">Cliente</th>
@@ -166,27 +176,27 @@ export default function LogsPage() {
                 <th className="pb-2">Detalhe</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading && events.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                  <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Carregando...
                   </td>
                 </tr>
               ) : events.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                  <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhum evento ainda. Envie uma mensagem no Telegram/WhatsApp para gerar logs.
                   </td>
                 </tr>
               ) : (
                 events.map((event, index) => (
                   <tr key={`${event.ts}-${event.message_id}-${event.status}-${index}`}>
-                    <td className="py-2 pr-3 whitespace-nowrap text-gray-500">{formatBrasiliaDateTime(event.ts)}</td>
+                    <td className="py-2 pr-3 whitespace-nowrap text-gray-500 dark:text-gray-400">{formatBrasiliaDateTime(event.ts)}</td>
                     <td className="py-2 pr-3">
-                      <div className="font-medium text-gray-900">{event.tenant_name || "—"}</div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{event.tenant_name || "—"}</div>
                       {event.tenant_id ? (
-                        <div className="text-xs text-gray-400">{event.tenant_id}</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">{event.tenant_id}</div>
                       ) : null}
                     </td>
                     <td className="py-2 pr-3">
@@ -194,19 +204,19 @@ export default function LogsPage() {
                         <DirectionIcon direction={event.direction} />
                         <span
                           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                            STATUS_STYLES[event.status] || "bg-gray-100 text-gray-600"
+                            STATUS_STYLES[event.status] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                           }`}
                         >
                           {event.label}
                         </span>
                       </div>
                       {event.message_id ? (
-                        <div className="mt-1 text-xs text-gray-400">msg #{event.message_id}</div>
+                        <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">msg #{event.message_id}</div>
                       ) : null}
                     </td>
-                    <td className="py-2 pr-3 text-gray-700">#{event.conversation_id || "—"}</td>
-                    <td className="py-2 pr-3 text-gray-500">{event.inbox_id ?? "—"}</td>
-                    <td className="py-2 max-w-xs truncate text-gray-700" title={event.detail}>
+                    <td className="py-2 pr-3 text-gray-700 dark:text-gray-300">#{event.conversation_id || "—"}</td>
+                    <td className="py-2 pr-3 text-gray-500 dark:text-gray-400">{event.inbox_id ?? "—"}</td>
+                    <td className="py-2 max-w-xs truncate text-gray-700 dark:text-gray-300" title={event.detail}>
                       {event.detail || "—"}
                     </td>
                   </tr>
@@ -217,8 +227,8 @@ export default function LogsPage() {
         </div>
 
         {total > 0 && (
-          <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-gray-100 pt-4 sm:flex-row">
-            <p className="text-sm text-gray-500">
+          <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-gray-100 pt-4 sm:flex-row dark:border-gray-800">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {total} evento{total !== 1 ? "s" : ""} · página {page} de {totalPages}
             </p>
             <div className="flex items-center gap-2">
