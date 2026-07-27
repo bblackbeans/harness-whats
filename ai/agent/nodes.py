@@ -418,6 +418,14 @@ def manage_context(state: HarnessState) -> HarnessState:
 
         if allowed.get("from_defined"):
             tools_extra = agent_tools_prompt_block(allowed.get("tools") or [])
+            defined_kinds = {t.get("kind") for t in (allowed.get("tools") or [])}
+            if "save_field" in (allowed.get("builtins") or set()) and "save_field" not in defined_kinds:
+                tools_extra += (
+                    "\n\n### Salvar campo [save_field]\n"
+                    "Regras: sempre que o cliente informar nome, cpf, email, plano ou outro campo do perfil, "
+                    "inclua em field_updates neste mesmo turno.\n"
+                    "Ação: preencha field_updates com os dados coletados."
+                )
             if "transfer_agent" in (allowed.get("builtins") or set()):
                 specs = list_specialists(db, tenant.id)
                 if specs:
