@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.output_parsers import JsonOutputParser
@@ -98,6 +99,58 @@ def _filter_files_by_refs(files: list[str], file_refs: set[str] | None, all_file
                 break
     return out
 
+
+def _crm_field_keys(tenant_id: str) -> set[str]:
+    keys = {"nome", "name", "email", "phone", "telefone", "cpf", "plano"}
+    db = SessionLocal()
+    try:
+        for cf in list_custom_fields(db, tenant_id):
+            key = cf.get("key")
+            if key:
+                keys.add(str(key))
+    except Exception:
+        logger.exception("Falha ao listar custom fields tenant=%s", tenant_id)
+    finally:
+        db.close()
+    return keys
+
+
+def _infer_field_updates(inbound_text: str, reply: str, updates: dict) -> dict:
+    """Completa field_updates quando a IA confirma o dado na reply mas esquece o JSON."""
+    out = {str(k): v for k, v in (updates or {}).items() if v is not None and str(v).strip() != ""}
+    text = (inbound_text or "").strip()
+    reply_l = (reply or "").lower()
+    digits = re.sub(r"\D", "", text)
+
+    has_cpf_key = any(k.lower() == "cpf" for k in out)
+    if not has_cpf_key and len(digits) == 11 and "cpf" in reply_l:
+        if any(w in reply_l for w in ("anot", "registr", "salv", "recebi", "obrigad")):
+            out["cpf"] = digits
+
+    if not any(k.lower() in {"nome", "name"} for k in out):
+        # "Me chamo X" / "meu nome é X"
+        m = re.search(
+            r"(?:me\s+chamo|meu\s+nome\s*[ée]\s*|sou\s+o?\s*|sou\s+a\s+)([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{1,60})",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if m and any(w in reply_l for w in ("anot", "nome", "registr", "salv")):
+            out["nome"] = m.group(1).strip()
+    return out
+
+
+def _filter_field_updates(updates: dict, *, allowed_keys: set[str], save_field_allowed: bool) -> dict:
+    if not updates:
+        return {}
+    if save_field_allowed:
+        return {str(k): v for k, v in updates.items() if v is not None and str(v).strip() != ""}
+    # Sem tool save_field explícita: ainda persiste chaves de CRM do tenant
+    return {
+        str(k): v
+        for k, v in updates.items()
+        if str(k) in allowed_keys and v is not None and str(v).strip() != ""
+    }
+
 _DEFAULT_AGENT_PROMPT = (
     "Você é um assistente virtual de atendimento por mensagem. "
     "Responda em português do Brasil de forma natural e útil."
@@ -121,6 +174,9 @@ _AGENT_JSON_INSTRUCTIONS = (
     "Se o cliente pedir OUTRO setor, use transfer_to_agent com o id/nome da lista "
     "(o sistema troca o agente e ele atende neste mesmo turno — não diga 'aguarde o setor'). "
     "Nunca diga que vai transferir para o agente que você já é. "
+    "Nunca diga 'um momento'/'aguarde' sem executar uma tool HTTP neste mesmo turno. "
+    "Se não houver tool de abrir chamado/ticket, confirme o registro na reply, "
+    "salve field_updates e faça a próxima pergunta útil ou encerre — não trave o atendimento. "
     "Se houver ROTEIRO OPERACIONAL, atualize o checklist ao concluir cada etapa."
 )
 _DEFAULT_FACTS_PROMPT = (
@@ -579,8 +635,13 @@ def run_agent(state: HarnessState) -> HarnessState:
         handoff = False
 
     field_updates = result.get("field_updates") if isinstance(result.get("field_updates"), dict) else {}
-    if has_allowlist and "save_field" not in builtins:
-        field_updates = {}
+    field_updates = _infer_field_updates(text, reply, field_updates)
+    crm_keys = _crm_field_keys(tenant.id)
+    field_updates = _filter_field_updates(
+        field_updates,
+        allowed_keys=crm_keys,
+        save_field_allowed=not has_allowlist or "save_field" in builtins,
+    )
 
     http_calls = [str(s) for s in (result.get("http_tool_calls") or []) if s]
     if from_defined:

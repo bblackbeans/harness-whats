@@ -104,6 +104,8 @@ def build_agent_context(
         f"- email: {profile.get('email') or 'desconhecido'}",
     ]
     for key, value in fields.items():
+        if str(key).startswith("_"):
+            continue
         profile_lines.append(f"- {key}: {value}")
     profile_block = "\n".join(profile_lines)
 

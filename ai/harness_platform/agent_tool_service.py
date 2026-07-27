@@ -259,6 +259,8 @@ def resolve_agent_tools_for_runtime(
                     send_file_unrestricted = True
                 else:
                     file_refs.update(str(i) for i in ids)
+        # CRM: sempre permitir salvar campos do contato (nome/cpf/etc.)
+        builtins.add("save_field")
         if send_file_unrestricted:
             file_refs = {"*"}
         elif "send_file" in builtins and not file_refs:

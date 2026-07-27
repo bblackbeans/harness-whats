@@ -104,7 +104,10 @@ export function ContactsManager({ loadContacts, loadFields, create, update, remo
                   {c.email ? ` · ${c.email}` : ""}
                 </p>
                 <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                  {Object.keys(c.fields || {}).length} campo(s) salvos
+                  {
+                    Object.keys(c.fields || {}).filter((k) => !k.startsWith("_")).length
+                  }{" "}
+                  campo(s) salvos
                 </p>
               </button>
             </li>
