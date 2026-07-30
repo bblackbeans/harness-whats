@@ -12,7 +12,6 @@ import {
   createAgentTool,
   createContact,
   createCustomField,
-  createFlow,
   createHttpTool,
   createInboundWebhook,
   createTenantUser,
@@ -20,30 +19,23 @@ import {
   deleteAgentTool,
   deleteContact,
   deleteCustomField,
-  deleteFlow,
   deleteHttpTool,
   deleteInboundWebhook,
   deleteKnowledge,
   deleteSendableFile,
   getAgentTool,
-  getFlow,
   getOrchestrator,
   getTenant,
-  importFlow,
   listAgents,
   listAgentTools,
   listContacts,
   listCustomFields,
-  listFlowRuns,
-  listFlows,
   listHttpTools,
   listInboundWebhooks,
   listKnowledge,
   listLlmModels,
   listSendableFiles,
   listTenantUsers,
-  publishFlow,
-  recompileFlow,
   regenerateWebhookSecret,
   reindexKnowledge,
   Tenant,
@@ -51,7 +43,6 @@ import {
   updateAgent,
   updateAgentTool,
   updateContact,
-  updateFlow,
   updateInboundWebhook,
   updateOrchestrator,
   updateSendableFile,
@@ -64,7 +55,6 @@ import { ContactsManager } from "@/components/crm/ContactsManager";
 import { IntegrationsManager } from "@/components/crm/IntegrationsManager";
 import { FilesManager } from "@/components/crm/FilesManager";
 import { AgentsManager } from "@/components/crm/AgentsManager";
-import { FlowsManager } from "@/components/crm/FlowsManager";
 import { OrchestratorManager } from "@/components/crm/OrchestratorManager";
 import { ToolsManager } from "@/components/crm/ToolsManager";
 
@@ -239,7 +229,22 @@ export default function ClienteDetailPage() {
 
       <div className="-mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div className="flex min-w-max flex-nowrap gap-2 sm:min-w-0 sm:flex-wrap">
-        {SECTIONS.map((s) => (
+        {SECTIONS.map((s) => {
+          const isFlows = s === "Flows";
+          if (isFlows) {
+            return (
+              <span
+                key={s}
+                title="Flows fora do MVP"
+                className="cursor-not-allowed rounded-lg px-4 py-2 text-sm font-medium text-gray-400 opacity-60 dark:text-gray-500"
+                aria-disabled="true"
+              >
+                {s}
+                <span className="ml-1.5 text-[10px] uppercase tracking-wide">em breve</span>
+              </span>
+            );
+          }
+          return (
           <button
             key={s}
             type="button"
@@ -250,7 +255,8 @@ export default function ClienteDetailPage() {
           >
             {s}
           </button>
-        ))}
+          );
+        })}
         </div>
       </div>
 
@@ -260,8 +266,7 @@ export default function ClienteDetailPage() {
         section === "Arquivos" ||
         section === "Orquestrador" ||
         section === "Agentes" ||
-        section === "Tools" ||
-        section === "Flows") && (
+        section === "Tools") && (
         <div className="max-w-5xl">
           {section === "Campos" && (
             <FieldsManager
@@ -324,20 +329,6 @@ export default function ClienteDetailPage() {
               updateTool={(id, data) => updateAgentTool(clienteId, id, data)}
               deleteTool={(id) => deleteAgentTool(clienteId, id)}
               loadFiles={() => listSendableFiles(clienteId)}
-            />
-          )}
-          {section === "Flows" && (
-            <FlowsManager
-              loadAgents={() => listAgents(clienteId, "specialist")}
-              loadFlows={(agentId) => listFlows(clienteId, agentId)}
-              getFlow={(id) => getFlow(clienteId, id)}
-              createFlow={(data) => createFlow(clienteId, data)}
-              publishFlow={(id) => publishFlow(clienteId, id)}
-              deleteFlow={(id) => deleteFlow(clienteId, id)}
-              importFlow={(file, agentId) => importFlow(clienteId, file, agentId)}
-              recompileFlow={(id) => recompileFlow(clienteId, id)}
-              updateFlow={(id, data) => updateFlow(clienteId, id, data)}
-              loadRuns={(flowId) => listFlowRuns(clienteId, flowId)}
             />
           )}
         </div>

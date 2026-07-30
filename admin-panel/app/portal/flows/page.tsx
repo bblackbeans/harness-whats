@@ -1,19 +1,6 @@
 "use client";
 
-import { FlowsManager } from "@/components/crm/FlowsManager";
 import { PortalShell } from "@/components/PortalShell";
-import {
-  portalCreateFlow,
-  portalDeleteFlow,
-  portalGetFlow,
-  portalImportFlow,
-  portalListAgents,
-  portalListFlowRuns,
-  portalListFlows,
-  portalPublishFlow,
-  portalRecompileFlow,
-  portalUpdateFlow,
-} from "@/lib/portal-api";
 
 export default function PortalFlowsPage() {
   return (
@@ -21,22 +8,14 @@ export default function PortalFlowsPage() {
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-gray-100">Flows</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Guia operacional opcional (roteiro/checklist). O centro da arquitetura é Orquestrador →
-          Agentes → Tools; o Flow não executa a conversa.
+          Fora do MVP. Em breve você poderá montar roteiros/checklist por agente aqui.
         </p>
       </div>
-      <FlowsManager
-        loadAgents={() => portalListAgents("specialist")}
-        loadFlows={portalListFlows}
-        getFlow={portalGetFlow}
-        createFlow={portalCreateFlow}
-        publishFlow={portalPublishFlow}
-        deleteFlow={portalDeleteFlow}
-        importFlow={portalImportFlow}
-        recompileFlow={portalRecompileFlow}
-        updateFlow={portalUpdateFlow}
-        loadRuns={portalListFlowRuns}
-      />
+      <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-10 text-center dark:border-gray-700 dark:bg-gray-900/40">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Flows não estão disponíveis neste momento. Use Orquestrador, Agentes e Tools para o atendimento.
+        </p>
+      </div>
     </PortalShell>
   );
 }

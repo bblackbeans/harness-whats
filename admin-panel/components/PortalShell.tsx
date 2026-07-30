@@ -39,7 +39,13 @@ const navSections: NavSection[] = [
       { href: "/portal/orchestrator", label: "Orquestrador", icon: Waypoints },
       { href: "/portal/agents", label: "Agentes", icon: Bot },
       { href: "/portal/tools", label: "Tools", icon: Wrench },
-      { href: "/portal/flows", label: "Flows", icon: GitBranch },
+      {
+        href: "/portal/flows",
+        label: "Flows",
+        icon: GitBranch,
+        disabled: true,
+        disabledHint: "Flows fora do MVP — em breve",
+      },
     ],
   },
 ];

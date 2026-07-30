@@ -12,6 +12,8 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   match?: (pathname: string) => boolean;
+  disabled?: boolean;
+  disabledHint?: string;
 };
 
 export type NavSection = {
@@ -39,6 +41,24 @@ function NavLink({
   const pathname = usePathname();
   const active = item.match ? item.match(pathname) : pathname === item.href;
   const Icon = item.icon;
+
+  if (item.disabled) {
+    return (
+      <span
+        title={item.disabledHint || "Indisponível no MVP"}
+        className="nav-item cursor-not-allowed opacity-45"
+        aria-disabled="true"
+      >
+        <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+        <span className="flex items-center gap-1.5">
+          {item.label}
+          <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+            em breve
+          </span>
+        </span>
+      </span>
+    );
+  }
 
   return (
     <Link

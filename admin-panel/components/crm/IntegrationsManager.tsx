@@ -96,8 +96,10 @@ export function IntegrationsManager(props: Props) {
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Webhooks de entrada</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Cole a URL e o secret em ferramentas externas (RD Station, CRM, etc.). Envie header{" "}
-            <code className="text-xs">X-Webhook-Secret</code>.
+            Após criar, use a URL gerada (API do harness hospedada +{" "}
+            <code className="text-xs">/webhooks/inbound/&#123;tenant&#125;/&#123;slug&#125;</code>) em RD Station,
+            CRM, etc. Envie header <code className="text-xs">X-Webhook-Secret</code> com o secret.
+            O payload precisa trazer telefone (mapeie <code className="text-xs">phone</code>).
           </p>
         </div>
         <form onSubmit={onCreateWebhook} className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
@@ -159,7 +161,9 @@ export function IntegrationsManager(props: Props) {
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">APIs de saída</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            A IA pode chamar estas APIs. Use body com <code>{"{{campo}}"}</code> ou selecione campos do contato.
+            URL = endpoint <strong>externo</strong> (RD, CRM, webhook.site…). O harness chama essa URL
+            quando a tool HTTP do agente dispara. Use body com <code>{"{{campo}}"}</code> ou marque os
+            campos do contato.
           </p>
         </div>
         <form onSubmit={onCreateTool} className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
