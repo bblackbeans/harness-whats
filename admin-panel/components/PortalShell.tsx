@@ -7,6 +7,7 @@ import {
   GitBranch,
   LayoutDashboard,
   Link2,
+  Megaphone,
   MessageSquare,
   Contact,
   Tags,
@@ -30,6 +31,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/portal/campos", label: "Campos", icon: Tags },
       { href: "/portal/contatos", label: "Contatos", icon: Contact },
+      { href: "/portal/disparos", label: "Disparos", icon: Megaphone },
       { href: "/portal/integracoes", label: "Integrações", icon: Link2 },
     ],
   },

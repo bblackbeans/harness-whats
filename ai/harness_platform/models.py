@@ -374,3 +374,59 @@ class FlowRun(Base):
     )
 
     flow: Mapped["Flow"] = relationship(back_populates="runs")
+
+
+class DispatchCampaign(Base):
+    """Campanha de disparo WhatsApp via Chatwoot (templates Meta / texto na janela 24h)."""
+
+    __tablename__ = "dispatch_campaigns"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    mode: Mapped[str] = mapped_column(String(32), default="template")  # template | conversation
+    template_name: Mapped[str] = mapped_column(String(255), default="")
+    language: Mapped[str] = mapped_column(String(16), default="pt_BR")
+    message: Mapped[str] = mapped_column(Text, default="")
+    account_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    inbox_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    agent_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    flow_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="draft")
+    # draft | scheduled | running | completed | failed | cancelled
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    default_params: Mapped[dict] = mapped_column(JSONB, default=dict)
+    error: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    recipients: Mapped[list["DispatchCampaignRecipient"]] = relationship(
+        back_populates="campaign", cascade="all, delete-orphan"
+    )
+
+
+class DispatchCampaignRecipient(Base):
+    __tablename__ = "dispatch_campaign_recipients"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("dispatch_campaigns.id", ondelete="CASCADE")
+    )
+    contact_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("contact_profiles.id", ondelete="SET NULL"), nullable=True
+    )
+    phone: Mapped[str] = mapped_column(String(32), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), default="")
+    chatwoot_contact_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    conversation_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="pending")
+    # pending | sent | failed | skipped
+    error: Mapped[str] = mapped_column(Text, default="")
+    variables: Mapped[dict] = mapped_column(JSONB, default=dict)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    campaign: Mapped["DispatchCampaign"] = relationship(back_populates="recipients")

@@ -184,6 +184,46 @@ export async function portalDeleteContact(id: number) {
   return portalRequest(`${CRM}/contacts/${id}`, { method: "DELETE" });
 }
 
+export async function portalListCampaigns() {
+  return portalRequest<{ campaigns: import("@/components/crm/CampaignsManager").Campaign[] }>(
+    `${CRM}/campaigns`
+  );
+}
+
+export async function portalGetCampaign(id: number) {
+  return portalRequest<import("@/components/crm/CampaignsManager").Campaign>(
+    `${CRM}/campaigns/${id}`
+  );
+}
+
+export async function portalCreateCampaign(data: Record<string, unknown>) {
+  return portalRequest<import("@/components/crm/CampaignsManager").Campaign>(`${CRM}/campaigns`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function portalSendCampaign(id: number) {
+  return portalRequest<import("@/components/crm/CampaignsManager").Campaign>(
+    `${CRM}/campaigns/${id}/send`,
+    { method: "POST" }
+  );
+}
+
+export async function portalScheduleCampaign(id: number, scheduled_at: string) {
+  return portalRequest<import("@/components/crm/CampaignsManager").Campaign>(
+    `${CRM}/campaigns/${id}/schedule`,
+    { method: "POST", body: JSON.stringify({ scheduled_at }) }
+  );
+}
+
+export async function portalCancelCampaign(id: number) {
+  return portalRequest<import("@/components/crm/CampaignsManager").Campaign>(
+    `${CRM}/campaigns/${id}/cancel`,
+    { method: "POST" }
+  );
+}
+
 export async function portalListWebhooks() {
   return portalRequest<{ webhooks: InboundWebhook[] }>(`${CRM}/webhooks`);
 }

@@ -72,10 +72,18 @@ def startup_seed_admin():
             seed_demo_tenant_user(db)
     except Exception:
         logger.warning("Não foi possível seed admin/LLM (DB indisponível?)", exc_info=True)
+    try:
+        from harness_platform.campaign_scheduler import start_campaign_scheduler
+
+        start_campaign_scheduler()
+    except Exception:
+        logger.warning("Não foi possível iniciar scheduler de campanhas", exc_info=True)
 
 
 class DispatchContact(BaseModel):
-    conversation_id: int
+    conversation_id: int | None = None
+    phone: str | None = None
+    name: str = ""
     variables: dict = Field(default_factory=dict)
     processed_params: dict = Field(default_factory=dict)
 
@@ -87,6 +95,7 @@ class DispatchRequest(BaseModel):
     language: str = "pt_BR"
     tenant_id: str | None = None
     account_id: int | None = None
+    inbox_id: int | None = None
     agent_id: int | None = None
     flow_id: int | None = None
     contacts: list[DispatchContact]
@@ -99,11 +108,15 @@ class DispatchRequest(BaseModel):
             raise ValueError("template_name é obrigatório no modo template")
         if self.mode == "conversation" and not self.message:
             raise ValueError("message é obrigatório no modo conversation")
+        for c in self.contacts:
+            if c.conversation_id is None and not (c.phone or "").strip():
+                raise ValueError("Cada contato precisa de conversation_id ou phone")
         return self
 
 
 class DispatchResult(BaseModel):
-    conversation_id: int
+    conversation_id: int | None = None
+    phone: str | None = None
     ok: bool
     error: str | None = None
 
@@ -424,6 +437,9 @@ async def _safe_process(event: InboundEvent) -> None:
 
 @app.post("/dispatch", response_model=list[DispatchResult])
 async def dispatch_messages(body: DispatchRequest):
+    from harness_platform.phone_utils import normalize_phone
+    from integrations.chatwoot import ensure_contact_conversation
+
     try:
         account_id = body.account_id or default_account_id()
     except ValueError as error:
@@ -431,15 +447,48 @@ async def dispatch_messages(body: DispatchRequest):
 
     results: list[DispatchResult] = []
     bot_token = ""
+    inbox_id = body.inbox_id
     if body.tenant_id:
-        bot_token = get_tenant(body.tenant_id).routing.chatwoot_bot_token
+        tenant = get_tenant(body.tenant_id)
+        bot_token = tenant.routing.chatwoot_bot_token
+        if inbox_id is None and tenant.routing.chatwoot_inbox_ids:
+            inbox_id = int(tenant.routing.chatwoot_inbox_ids[0])
+        if body.account_id is None and tenant.routing.chatwoot_account_ids:
+            account_id = int(tenant.routing.chatwoot_account_ids[0])
 
     for contact in body.contacts:
+        phone = normalize_phone(contact.phone or "")
+        conversation_id = contact.conversation_id
         try:
+            if conversation_id is None:
+                if inbox_id is None:
+                    raise ValueError(
+                        "inbox_id obrigatório para disparo por telefone "
+                        "(configure chatwoot_inbox_ids no cliente)"
+                    )
+                ensured = await ensure_contact_conversation(
+                    account_id,
+                    phone=phone,
+                    inbox_id=int(inbox_id),
+                    name=contact.name or "",
+                    bot_token=bot_token or None,
+                )
+                if not ensured.get("ok") or not ensured.get("conversation_id"):
+                    results.append(
+                        DispatchResult(
+                            conversation_id=None,
+                            phone=phone or None,
+                            ok=False,
+                            error=str(ensured.get("error") or "Falha ao criar conversa"),
+                        )
+                    )
+                    continue
+                conversation_id = int(ensured["conversation_id"])
+
             if body.mode == "template":
                 response = await send_template(
                     account_id=account_id,
-                    conversation_id=contact.conversation_id,
+                    conversation_id=conversation_id,
                     template_name=body.template_name or "",
                     language=body.language,
                     processed_params=contact.processed_params or contact.variables,
@@ -454,7 +503,7 @@ async def dispatch_messages(body: DispatchRequest):
                 )
                 response = await send_message(
                     account_id,
-                    contact.conversation_id,
+                    conversation_id,
                     text,
                     bot_token=bot_token or None,
                 )
@@ -472,7 +521,7 @@ async def dispatch_messages(body: DispatchRequest):
                             db.query(ContactProfile)
                             .filter(
                                 ContactProfile.tenant_id == body.tenant_id,
-                                ContactProfile.last_conversation_id == contact.conversation_id,
+                                ContactProfile.last_conversation_id == conversation_id,
                             )
                             .first()
                         )
@@ -489,7 +538,8 @@ async def dispatch_messages(body: DispatchRequest):
                     logger.warning("Não foi possível gravar preferência de Flow no dispatch", exc_info=True)
             results.append(
                 DispatchResult(
-                    conversation_id=contact.conversation_id,
+                    conversation_id=conversation_id,
+                    phone=phone or None,
                     ok=ok,
                     error=None if ok else str(response.get("error")),
                 )
@@ -497,7 +547,8 @@ async def dispatch_messages(body: DispatchRequest):
         except Exception as error:
             results.append(
                 DispatchResult(
-                    conversation_id=contact.conversation_id,
+                    conversation_id=conversation_id,
+                    phone=phone or None,
                     ok=False,
                     error=str(error),
                 )

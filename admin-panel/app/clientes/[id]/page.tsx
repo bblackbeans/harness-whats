@@ -12,9 +12,11 @@ import {
   createAgentTool,
   createContact,
   createCustomField,
+  createCampaign,
   createHttpTool,
   createInboundWebhook,
   createTenantUser,
+  cancelCampaign,
   deleteAgent,
   deleteAgentTool,
   deleteContact,
@@ -24,10 +26,12 @@ import {
   deleteKnowledge,
   deleteSendableFile,
   getAgentTool,
+  getCampaign,
   getOrchestrator,
   getTenant,
   listAgents,
   listAgentTools,
+  listCampaigns,
   listContacts,
   listCustomFields,
   listHttpTools,
@@ -38,6 +42,8 @@ import {
   listTenantUsers,
   regenerateWebhookSecret,
   reindexKnowledge,
+  scheduleCampaign,
+  sendCampaign,
   Tenant,
   toggleTenantActive,
   updateAgent,
@@ -52,6 +58,7 @@ import {
 } from "@/lib/api";
 import { FieldsManager } from "@/components/crm/FieldsManager";
 import { ContactsManager } from "@/components/crm/ContactsManager";
+import { CampaignsManager } from "@/components/crm/CampaignsManager";
 import { IntegrationsManager } from "@/components/crm/IntegrationsManager";
 import { FilesManager } from "@/components/crm/FilesManager";
 import { AgentsManager } from "@/components/crm/AgentsManager";
@@ -71,6 +78,7 @@ const SECTIONS = [
   "Arquivos",
   "Campos",
   "Contatos",
+  "Disparos",
   "Integrações",
   "Orquestrador",
   "Agentes",
@@ -262,6 +270,7 @@ export default function ClienteDetailPage() {
 
       {(section === "Campos" ||
         section === "Contatos" ||
+        section === "Disparos" ||
         section === "Integrações" ||
         section === "Arquivos" ||
         section === "Orquestrador" ||
@@ -282,6 +291,17 @@ export default function ClienteDetailPage() {
               create={(data) => createContact(clienteId, data)}
               update={(id, data) => updateContact(clienteId, id, data)}
               remove={(id) => deleteContact(clienteId, id)}
+            />
+          )}
+          {section === "Disparos" && (
+            <CampaignsManager
+              loadCampaigns={() => listCampaigns(clienteId)}
+              getCampaign={(id) => getCampaign(clienteId, id)}
+              createCampaign={(data) => createCampaign(clienteId, data)}
+              sendCampaign={(id) => sendCampaign(clienteId, id)}
+              scheduleCampaign={(id, at) => scheduleCampaign(clienteId, id, at)}
+              cancelCampaign={(id) => cancelCampaign(clienteId, id)}
+              loadContacts={() => listContacts(clienteId)}
             />
           )}
           {section === "Integrações" && (

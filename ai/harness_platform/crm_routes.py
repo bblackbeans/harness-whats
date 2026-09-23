@@ -31,6 +31,8 @@ from harness_platform.integration_service import (
     update_inbound_webhook,
 )
 from harness_platform.schemas import (
+    CampaignCreate,
+    CampaignSchedule,
     ContactCreate,
     ContactUpdate,
     CustomFieldCreate,
@@ -40,6 +42,14 @@ from harness_platform.schemas import (
     InboundWebhookCreate,
     InboundWebhookUpdate,
     SendableFileUpdate,
+)
+from harness_platform.campaign_service import (
+    cancel_campaign,
+    create_campaign,
+    get_campaign,
+    list_campaigns,
+    run_campaign,
+    schedule_campaign,
 )
 from harness_platform.sendable_file_service import (
     delete_sendable_file,
@@ -334,5 +344,73 @@ def build_crm_routes(
             delete_sendable_file(db, tenant_id, file_id)
         except LookupError as error:
             raise HTTPException(status_code=404, detail=str(error)) from error
+
+    # --- Campanhas de disparo WhatsApp (via Chatwoot / templates Meta) ---
+
+    @router.get("/campaigns")
+    def api_list_campaigns(tenant_id: str = Depends(get_tenant_id), db: Session = Depends(get_db)):
+        return {"campaigns": list_campaigns(db, tenant_id)}
+
+    @router.post("/campaigns", status_code=status.HTTP_201_CREATED)
+    def api_create_campaign(
+        body: CampaignCreate,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            return create_campaign(db, tenant_id, body.model_dump())
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @router.get("/campaigns/{campaign_id}")
+    def api_get_campaign(
+        campaign_id: int,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        data = get_campaign(db, tenant_id, campaign_id)
+        if not data:
+            raise HTTPException(status_code=404, detail="Campanha não encontrada")
+        return data
+
+    @router.post("/campaigns/{campaign_id}/send")
+    async def api_send_campaign(
+        campaign_id: int,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            return await run_campaign(db, tenant_id, campaign_id)
+        except LookupError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @router.post("/campaigns/{campaign_id}/schedule")
+    def api_schedule_campaign(
+        campaign_id: int,
+        body: CampaignSchedule,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            return schedule_campaign(db, tenant_id, campaign_id, body.scheduled_at)
+        except LookupError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @router.post("/campaigns/{campaign_id}/cancel")
+    def api_cancel_campaign(
+        campaign_id: int,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            return cancel_campaign(db, tenant_id, campaign_id)
+        except LookupError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
 
     return router

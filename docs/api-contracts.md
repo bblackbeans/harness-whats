@@ -102,9 +102,11 @@ Webhook principal — Chatwoot Agent Bot aponta para esta URL.
 
 ### `POST /dispatch`
 
-Disparo proativo de mensagens para múltiplas conversas.
+Disparo proativo de mensagens para múltiplas conversas (via Chatwoot → WhatsApp Cloud / Meta).
 
-**Body:**
+Cada contato precisa de `conversation_id` **ou** `phone` (+ `inbox_id` / `chatwoot_inbox_ids` do tenant). Com telefone, o harness cria/obtém contato e conversa no Chatwoot antes de enviar.
+
+**Body (conversa existente):**
 ```json
 {
   "mode": "conversation",
@@ -120,19 +122,53 @@ Disparo proativo de mensagens para múltiplas conversas.
 }
 ```
 
+**Body (por telefone + template Meta):**
+```json
+{
+  "mode": "template",
+  "template_name": "boas_vindas",
+  "language": "pt_BR",
+  "message": "boas_vindas",
+  "tenant_id": "clinica-bem-estar",
+  "inbox_id": 12,
+  "contacts": [
+    {
+      "phone": "5511999999999",
+      "name": "Maria",
+      "processed_params": { "1": "Maria" }
+    }
+  ]
+}
+```
+
 **Modos:**
 
 | mode | Campos obrigatórios | Uso |
 |---|---|---|
-| `conversation` | `message` | Texto personalizado por IA ou template simples |
-| `template` | `template_name`, `message` | Template WhatsApp Cloud (não funciona no Telegram) |
+| `conversation` | `message` | Texto livre — só dentro da janela de 24h após o cliente escrever |
+| `template` | `template_name` | Template WhatsApp Cloud aprovado (fora de 24h / primeiro contato) |
+
+**Pré-requisito de canal:** inbox **WhatsApp Cloud (API oficial Meta)** no Chatwoot + templates aprovados no Meta Business Manager. Evolution/QR não serve para template oficial.
 
 **Resposta 200:**
 ```json
 [
-  { "conversation_id": 42, "ok": true, "error": null }
+  { "conversation_id": 42, "phone": "5511999999999", "ok": true, "error": null }
 ]
 ```
+
+### Campanhas CRM (`/admin/api/tenants/{id}/crm/campaigns` e portal)
+
+| Método | Rota | Uso |
+|---|---|---|
+| GET | `/campaigns` | Listar campanhas |
+| POST | `/campaigns` | Criar (template/texto + `contact_ids` / `phones`) |
+| GET | `/campaigns/{id}` | Detalhe + destinatários |
+| POST | `/campaigns/{id}/send` | Enviar agora |
+| POST | `/campaigns/{id}/schedule` | Agendar (`{"scheduled_at": "..."}`) |
+| POST | `/campaigns/{id}/cancel` | Cancelar |
+
+O scheduler interno (poll no processo FastAPI) dispara campanhas com `status=scheduled` quando `scheduled_at` chega.
 
 ---
 

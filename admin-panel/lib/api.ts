@@ -454,6 +454,46 @@ export async function deleteContact(tenantId: string, contactId: number) {
   return request(`${crmBase(tenantId)}/contacts/${contactId}`, { method: "DELETE" });
 }
 
+export async function listCampaigns(tenantId: string) {
+  return request<{ campaigns: import("@/components/crm/CampaignsManager").Campaign[] }>(
+    `${crmBase(tenantId)}/campaigns`
+  );
+}
+
+export async function getCampaign(tenantId: string, campaignId: number) {
+  return request<import("@/components/crm/CampaignsManager").Campaign>(
+    `${crmBase(tenantId)}/campaigns/${campaignId}`
+  );
+}
+
+export async function createCampaign(tenantId: string, data: Record<string, unknown>) {
+  return request<import("@/components/crm/CampaignsManager").Campaign>(
+    `${crmBase(tenantId)}/campaigns`,
+    { method: "POST", body: JSON.stringify(data) }
+  );
+}
+
+export async function sendCampaign(tenantId: string, campaignId: number) {
+  return request<import("@/components/crm/CampaignsManager").Campaign>(
+    `${crmBase(tenantId)}/campaigns/${campaignId}/send`,
+    { method: "POST" }
+  );
+}
+
+export async function scheduleCampaign(tenantId: string, campaignId: number, scheduled_at: string) {
+  return request<import("@/components/crm/CampaignsManager").Campaign>(
+    `${crmBase(tenantId)}/campaigns/${campaignId}/schedule`,
+    { method: "POST", body: JSON.stringify({ scheduled_at }) }
+  );
+}
+
+export async function cancelCampaign(tenantId: string, campaignId: number) {
+  return request<import("@/components/crm/CampaignsManager").Campaign>(
+    `${crmBase(tenantId)}/campaigns/${campaignId}/cancel`,
+    { method: "POST" }
+  );
+}
+
 export async function listInboundWebhooks(tenantId: string) {
   return request<{ webhooks: InboundWebhook[] }>(`${crmBase(tenantId)}/webhooks`);
 }

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -357,4 +358,32 @@ class FlowUpdate(BaseModel):
     roteiro: dict[str, Any] | None = None
     checklist: list[Any] | None = None
     import_summary: dict[str, Any] | None = None
+
+
+class CampaignRecipientIn(BaseModel):
+    phone: str
+    name: str = ""
+    contact_id: int | None = None
+    variables: dict[str, Any] = Field(default_factory=dict)
+    processed_params: dict[str, Any] = Field(default_factory=dict)
+
+
+class CampaignCreate(BaseModel):
+    name: str = "Campanha"
+    mode: str = "template"  # template | conversation
+    template_name: str = ""
+    language: str = "pt_BR"
+    message: str = ""
+    account_id: int | None = None
+    inbox_id: int | None = None
+    agent_id: int | None = None
+    flow_id: int | None = None
+    default_params: dict[str, Any] = Field(default_factory=dict)
+    contact_ids: list[int] = Field(default_factory=list)
+    phones: list[str] = Field(default_factory=list)
+    recipients: list[CampaignRecipientIn] = Field(default_factory=list)
+
+
+class CampaignSchedule(BaseModel):
+    scheduled_at: datetime
 

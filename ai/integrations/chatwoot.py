@@ -737,3 +737,213 @@ async def send_template(
         if response.status_code >= 400:
             return {"ok": False, "error": response.text, "status": response.status_code}
         return {"ok": True, "data": response.json()}
+
+
+def _api_token(bot_token: str | None = None) -> str:
+    """Preferência: admin (cria contato/conversa) → bot do tenant → global."""
+    return _admin_token() or (bot_token or "").strip() or CHATWOOT_BOT_TOKEN
+
+
+def _e164_phone(phone: str) -> str:
+    digits = normalize_phone(phone)
+    if not digits:
+        return ""
+    return f"+{digits}"
+
+
+async def search_contacts(
+    account_id: int, query: str, *, bot_token: str | None = None
+) -> dict:
+    token = _api_token(bot_token)
+    if not CHATWOOT_BASE_URL or not token:
+        return {"ok": False, "error": "Chatwoot não configurado"}
+    url = f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}/contacts/search"
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(url, params={"q": query}, headers=_headers(token))
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        data = response.json()
+        payload = data.get("payload", data) if isinstance(data, dict) else data
+        items = payload if isinstance(payload, list) else []
+        return {"ok": True, "contacts": items}
+
+
+async def create_contact(
+    account_id: int,
+    *,
+    phone: str,
+    name: str = "",
+    email: str = "",
+    inbox_id: int | None = None,
+    bot_token: str | None = None,
+) -> dict:
+    """Cria contato no Chatwoot (WhatsApp Cloud exige phone E.164)."""
+    token = _api_token(bot_token)
+    if not CHATWOOT_BASE_URL or not token:
+        return {"ok": False, "error": "Chatwoot não configurado"}
+    e164 = _e164_phone(phone)
+    if not e164:
+        return {"ok": False, "error": "Telefone inválido"}
+    payload: dict = {
+        "name": (name or e164).strip(),
+        "phone_number": e164,
+        "identifier": normalize_phone(phone),
+    }
+    if email:
+        payload["email"] = email.strip()
+    if inbox_id is not None:
+        payload["inbox_id"] = int(inbox_id)
+
+    url = f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}/contacts"
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(url, json=payload, headers=_headers(token))
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        data = response.json()
+        contact = data.get("payload", data) if isinstance(data, dict) else data
+        if isinstance(contact, dict) and "contact" in contact:
+            contact = contact["contact"]
+        return {"ok": True, "contact": contact, "data": data}
+
+
+async def create_conversation(
+    account_id: int,
+    *,
+    inbox_id: int,
+    contact_id: int,
+    source_id: str | None = None,
+    bot_token: str | None = None,
+) -> dict:
+    """Abre conversa no inbox WhatsApp Cloud a partir do contato."""
+    token = _api_token(bot_token)
+    if not CHATWOOT_BASE_URL or not token:
+        return {"ok": False, "error": "Chatwoot não configurado"}
+
+    payload: dict = {
+        "inbox_id": int(inbox_id),
+        "contact_id": int(contact_id),
+        "status": "open",
+    }
+    if source_id:
+        payload["source_id"] = str(source_id)
+
+    url = f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}/conversations"
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(url, json=payload, headers=_headers(token))
+        if response.status_code >= 400:
+            nested = (
+                f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}"
+                f"/contacts/{contact_id}/conversations"
+            )
+            response2 = await client.post(
+                nested, json={"inbox_id": int(inbox_id)}, headers=_headers(token)
+            )
+            if response2.status_code >= 400:
+                return {
+                    "ok": False,
+                    "error": response2.text or response.text,
+                    "status": response2.status_code,
+                }
+            data = response2.json()
+        else:
+            data = response.json()
+
+    conversation = data if isinstance(data, dict) and data.get("id") else (
+        data.get("payload", data) if isinstance(data, dict) else data
+    )
+    if isinstance(conversation, dict) and "conversation" in conversation:
+        conversation = conversation["conversation"]
+    return {"ok": True, "conversation": conversation, "data": data}
+
+
+def _contact_source_id(contact: dict, inbox_id: int | None) -> str | None:
+    inboxes = contact.get("contact_inboxes") or contact.get("contactInboxes") or []
+    if not isinstance(inboxes, list):
+        return None
+    for item in inboxes:
+        if not isinstance(item, dict):
+            continue
+        inbox = item.get("inbox") if isinstance(item.get("inbox"), dict) else {}
+        item_inbox_id = item.get("inbox_id") or inbox.get("id")
+        if inbox_id is not None and item_inbox_id is not None:
+            try:
+                if int(item_inbox_id) != int(inbox_id):
+                    continue
+            except (TypeError, ValueError):
+                continue
+        source = item.get("source_id")
+        if source:
+            return str(source)
+    return None
+
+
+async def ensure_contact_conversation(
+    account_id: int,
+    *,
+    phone: str,
+    inbox_id: int,
+    name: str = "",
+    email: str = "",
+    bot_token: str | None = None,
+) -> dict:
+    """Garante contato + conversa no Chatwoot para disparo WhatsApp (API oficial via inbox Cloud).
+
+    Pré-requisito: inbox WhatsApp Cloud (Meta) no Chatwoot — templates oficiais fora da janela 24h.
+    """
+    digits = normalize_phone(phone)
+    if not digits:
+        return {"ok": False, "error": "Telefone obrigatório"}
+
+    found = await search_contacts(account_id, digits, bot_token=bot_token)
+    contact = None
+    if found.get("ok"):
+        for item in found.get("contacts") or []:
+            if not isinstance(item, dict):
+                continue
+            item_phone = normalize_phone(
+                str(item.get("phone_number") or item.get("identifier") or "")
+            )
+            if item_phone == digits or digits.endswith(item_phone) or item_phone.endswith(digits):
+                contact = item
+                break
+
+    if not contact:
+        created = await create_contact(
+            account_id,
+            phone=digits,
+            name=name,
+            email=email,
+            inbox_id=inbox_id,
+            bot_token=bot_token,
+        )
+        if not created.get("ok"):
+            return created
+        contact = created.get("contact") or {}
+
+    contact_id = contact.get("id")
+    if contact_id is None:
+        return {"ok": False, "error": "Contato Chatwoot sem id", "contact": contact}
+
+    source_id = _contact_source_id(contact, inbox_id)
+    conv = await create_conversation(
+        account_id,
+        inbox_id=inbox_id,
+        contact_id=int(contact_id),
+        source_id=source_id,
+        bot_token=bot_token,
+    )
+    if not conv.get("ok"):
+        return {**conv, "contact": contact, "chatwoot_contact_id": int(contact_id)}
+
+    conversation = conv.get("conversation") or {}
+    conversation_id = conversation.get("id") if isinstance(conversation, dict) else None
+    if conversation_id is None and isinstance(conv.get("data"), dict):
+        conversation_id = conv["data"].get("id")
+
+    return {
+        "ok": True,
+        "contact": contact,
+        "conversation": conversation,
+        "chatwoot_contact_id": int(contact_id),
+        "conversation_id": int(conversation_id) if conversation_id is not None else None,
+    }
