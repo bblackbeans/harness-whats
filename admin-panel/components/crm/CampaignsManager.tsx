@@ -383,16 +383,14 @@ export function CampaignsManager(props: Props) {
                   onClick={() => openCampaign(c.id)}
                   className={`min-w-0 flex-1 rounded-lg border px-3 py-2 text-left text-sm ${
                     isSelected
-                      ? "border-brand-600 bg-brand-100 text-gray-900 dark:border-brand-400 dark:bg-brand-800 dark:text-white"
+                      ? "border-brand-600 bg-brand-200 text-gray-900 dark:border-brand-500 dark:bg-brand-300 dark:text-gray-900"
                       : "border-gray-200 bg-white text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100"
                   }`}
                 >
-                  <span className="block font-medium text-inherit">{c.name}</span>
+                  <span className="block font-medium text-gray-900">{c.name}</span>
                   <span
                     className={`mt-0.5 block text-xs ${
-                      isSelected
-                        ? "text-gray-800 dark:text-gray-100"
-                        : "text-gray-500 dark:text-gray-400"
+                      isSelected ? "text-gray-800" : "text-gray-500 dark:text-gray-400"
                     }`}
                   >
                     {c.status} · {c.mode}
