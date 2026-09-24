@@ -54,6 +54,17 @@ export function CampaignsManager(props: Props) {
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
   const [extraPhones, setExtraPhones] = useState("");
   const [scheduleAt, setScheduleAt] = useState("");
+  const [contactFilter, setContactFilter] = useState("");
+
+  const filteredContacts = contacts.filter((c) => {
+    const q = contactFilter.trim().toLowerCase();
+    if (!q) return true;
+    const digits = q.replace(/\D/g, "");
+    const hay = `${c.name || ""} ${c.phone || ""} ${c.email || ""}`.toLowerCase();
+    if (hay.includes(q)) return true;
+    if (digits && (c.phone || "").includes(digits)) return true;
+    return false;
+  });
 
   async function refresh() {
     const [c, k] = await Promise.all([props.loadCampaigns(), props.loadContacts()]);
@@ -237,14 +248,64 @@ export function CampaignsManager(props: Props) {
         )}
 
         <div>
-          <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-            Contatos do CRM ({selectedContactIds.length} selecionados)
-          </p>
-          <ul className="max-h-40 space-y-1 overflow-y-auto rounded border border-gray-200 p-2 dark:border-gray-800">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Contatos do CRM ({selectedContactIds.length} selecionados
+              {contactFilter.trim() ? ` · ${filteredContacts.length} filtrados` : ""} / {contacts.length})
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-secondary text-xs"
+                onClick={() =>
+                  setSelectedContactIds((prev) => {
+                    const ids = filteredContacts.map((c) => c.id);
+                    const allSelected = ids.length > 0 && ids.every((id) => prev.includes(id));
+                    if (allSelected) {
+                      return prev.filter((id) => !ids.includes(id));
+                    }
+                    return Array.from(new Set([...prev, ...ids]));
+                  })
+                }
+              >
+                {filteredContacts.length > 0 &&
+                filteredContacts.every((c) => selectedContactIds.includes(c.id))
+                  ? "Limpar filtrados"
+                  : "Selecionar filtrados"}
+              </button>
+              <button
+                type="button"
+                className="btn-secondary text-xs"
+                onClick={() =>
+                  setSelectedContactIds(
+                    selectedContactIds.length === contacts.length
+                      ? []
+                      : contacts.map((c) => c.id)
+                  )
+                }
+              >
+                {selectedContactIds.length === contacts.length && contacts.length > 0
+                  ? "Limpar todos"
+                  : "Selecionar todos"}
+              </button>
+            </div>
+          </div>
+          <input
+            className="input-field mb-2 w-full"
+            placeholder="Pesquisar por nome ou número"
+            value={contactFilter}
+            onChange={(e) => setContactFilter(e.target.value)}
+          />
+          <ul className="max-h-56 space-y-1 overflow-y-auto rounded border border-gray-200 p-2 dark:border-gray-800">
             {contacts.length === 0 && (
-              <li className="text-sm text-gray-500">Nenhum contato. Cadastre em Contatos.</li>
+              <li className="text-sm text-gray-500">
+                Nenhum contato. Use Contatos → Atualizar do Chatwoot.
+              </li>
             )}
-            {contacts.map((c) => (
+            {contacts.length > 0 && filteredContacts.length === 0 && (
+              <li className="text-sm text-gray-500">Nenhum contato com esse filtro.</li>
+            )}
+            {filteredContacts.map((c) => (
               <li key={c.id}>
                 <label className="flex items-center gap-2 text-sm">
                   <input

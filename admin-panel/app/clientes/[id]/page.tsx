@@ -33,6 +33,7 @@ import {
   listAgentTools,
   listCampaigns,
   listContacts,
+  syncContactsFromChatwoot,
   listCustomFields,
   listHttpTools,
   listInboundWebhooks,
@@ -291,6 +292,7 @@ export default function ClienteDetailPage() {
               create={(data) => createContact(clienteId, data)}
               update={(id, data) => updateContact(clienteId, id, data)}
               remove={(id) => deleteContact(clienteId, id)}
+              syncFromChatwoot={() => syncContactsFromChatwoot(clienteId)}
             />
           )}
           {section === "Disparos" && (

@@ -14,6 +14,7 @@ from harness_platform.contact_service import (
     get_contact,
     list_contacts,
     list_custom_fields,
+    sync_contacts_from_chatwoot,
     update_contact,
     update_custom_field,
     upsert_contact,
@@ -127,12 +128,25 @@ def build_crm_routes(
     @router.get("/contacts")
     def api_list_contacts(
         q: str = "",
-        limit: int = 100,
+        limit: int = 500,
         offset: int = 0,
         tenant_id: str = Depends(get_tenant_id),
         db: Session = Depends(get_db),
     ):
         return {"contacts": list_contacts(db, tenant_id, q=q, limit=limit, offset=offset)}
+
+    @router.post("/contacts/sync-chatwoot")
+    async def api_sync_contacts_chatwoot(
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        """Atualiza o CRM local com contatos do Chatwoot (telefone 55…)."""
+        try:
+            return await sync_contacts_from_chatwoot(db, tenant_id)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        except RuntimeError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
 
     @router.post("/contacts", status_code=status.HTTP_201_CREATED)
     def api_create_contact(

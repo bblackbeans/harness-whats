@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from harness_platform.models import ContactProfile, TenantCustomField
-from harness_platform.phone_utils import normalize_phone
+from harness_platform.phone_utils import normalize_phone, normalize_whatsapp_phone
 
 _KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 
@@ -179,7 +179,7 @@ def upsert_contact(
     last_conversation_id: int | None = None,
     merge_fields: bool = True,
 ) -> dict:
-    normalized = normalize_phone(phone)
+    normalized = normalize_whatsapp_phone(phone) or normalize_phone(phone)
     if not normalized and chatwoot_contact_id is not None:
         # Telegram / canal sem número: ainda permite chave via id Chatwoot
         normalized = f"cw{int(chatwoot_contact_id)}"
@@ -321,3 +321,81 @@ def save_contact_fields(
         chatwoot_contact_id=chatwoot_contact_id,
         last_conversation_id=last_conversation_id,
     )
+
+
+async def sync_contacts_from_chatwoot(db: Session, tenant_id: str) -> dict:
+    """Puxa contatos do Chatwoot e faz upsert no CRM local (telefone 55…)."""
+    from integrations.chatwoot import default_account_id, list_all_contacts
+    from tenants.registry import get_tenant
+
+    tenant = get_tenant(tenant_id)
+    accounts = tenant.routing.chatwoot_account_ids or []
+    try:
+        account_id = int(accounts[0]) if accounts else default_account_id()
+    except ValueError as error:
+        raise ValueError(str(error)) from error
+
+    bot_token = tenant.routing.chatwoot_bot_token or None
+    fetched = await list_all_contacts(account_id, bot_token=bot_token)
+    if not fetched.get("ok"):
+        raise RuntimeError(str(fetched.get("error") or "Falha ao listar contatos no Chatwoot"))
+
+    created = 0
+    updated = 0
+    skipped = 0
+    errors: list[str] = []
+
+    for item in fetched.get("contacts") or []:
+        if not isinstance(item, dict):
+            skipped += 1
+            continue
+        raw_phone = (
+            item.get("phone_number")
+            or item.get("phone")
+            or item.get("identifier")
+            or ""
+        )
+        phone = normalize_whatsapp_phone(str(raw_phone))
+        if not phone or len(phone) < 12:
+            skipped += 1
+            continue
+
+        cw_id = item.get("id")
+        try:
+            cw_id_int = int(cw_id) if cw_id is not None else None
+        except (TypeError, ValueError):
+            cw_id_int = None
+
+        existing = None
+        if cw_id_int is not None:
+            existing = get_contact_by_chatwoot_id(db, tenant_id, cw_id_int)
+        if not existing:
+            existing = get_contact_by_phone(db, tenant_id, phone)
+
+        try:
+            upsert_contact(
+                db,
+                tenant_id,
+                phone,
+                name=str(item.get("name") or "").strip() or None,
+                email=str(item.get("email") or "").strip() or None,
+                chatwoot_contact_id=cw_id_int,
+            )
+            if existing:
+                updated += 1
+            else:
+                created += 1
+        except Exception as error:  # noqa: BLE001 — sync continua nos demais
+            errors.append(f"{phone}: {error}")
+            skipped += 1
+
+    return {
+        "ok": True,
+        "account_id": account_id,
+        "fetched": len(fetched.get("contacts") or []),
+        "created": created,
+        "updated": updated,
+        "skipped": skipped,
+        "errors": errors[:20],
+        "phone_format": "55xxxxxxxxxxx",
+    }

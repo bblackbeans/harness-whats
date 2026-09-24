@@ -420,9 +420,23 @@ export async function deleteCustomField(tenantId: string, fieldId: number) {
   return request(`${crmBase(tenantId)}/fields/${fieldId}`, { method: "DELETE" });
 }
 
-export async function listContacts(tenantId: string, q = "") {
-  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+export async function listContacts(tenantId: string, q = "", limit = 500) {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (limit) params.set("limit", String(limit));
+  const qs = params.toString() ? `?${params.toString()}` : "";
   return request<{ contacts: Contact[] }>(`${crmBase(tenantId)}/contacts${qs}`);
+}
+
+export async function syncContactsFromChatwoot(tenantId: string) {
+  return request<{
+    ok: boolean;
+    fetched: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    errors?: string[];
+  }>(`${crmBase(tenantId)}/contacts/sync-chatwoot`, { method: "POST" });
 }
 
 export async function getContact(tenantId: string, contactId: number) {

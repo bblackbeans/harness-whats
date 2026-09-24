@@ -155,9 +155,23 @@ export async function portalDeleteField(id: number) {
   return portalRequest(`${CRM}/fields/${id}`, { method: "DELETE" });
 }
 
-export async function portalListContacts(q = "") {
-  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+export async function portalListContacts(q = "", limit = 500) {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (limit) params.set("limit", String(limit));
+  const qs = params.toString() ? `?${params.toString()}` : "";
   return portalRequest<{ contacts: Contact[] }>(`${CRM}/contacts${qs}`);
+}
+
+export async function portalSyncContactsFromChatwoot() {
+  return portalRequest<{
+    ok: boolean;
+    fetched: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    errors?: string[];
+  }>(`${CRM}/contacts/sync-chatwoot`, { method: "POST" });
 }
 
 export async function portalGetContact(id: number) {

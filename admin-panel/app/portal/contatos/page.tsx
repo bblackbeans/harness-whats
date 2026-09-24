@@ -7,6 +7,7 @@ import {
   portalDeleteContact,
   portalListContacts,
   portalListFields,
+  portalSyncContactsFromChatwoot,
   portalUpdateContact,
 } from "@/lib/portal-api";
 
@@ -25,6 +26,7 @@ export default function PortalContatosPage() {
         create={portalCreateContact}
         update={portalUpdateContact}
         remove={portalDeleteContact}
+        syncFromChatwoot={portalSyncContactsFromChatwoot}
       />
     </PortalShell>
   );

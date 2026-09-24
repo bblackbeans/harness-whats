@@ -768,6 +768,63 @@ async def search_contacts(
         return {"ok": True, "contacts": items}
 
 
+async def list_contacts_page(
+    account_id: int,
+    *,
+    page: int = 1,
+    bot_token: str | None = None,
+) -> dict:
+    """Lista uma página de contatos resolvidos no Chatwoot."""
+    token = _api_token(bot_token)
+    if not CHATWOOT_BASE_URL or not token:
+        return {"ok": False, "error": "Chatwoot não configurado"}
+    url = f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}/contacts"
+    async with httpx.AsyncClient(timeout=45) as client:
+        response = await client.get(
+            url,
+            params={"page": page, "sort": "name"},
+            headers=_headers(token),
+        )
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "status": response.status_code}
+        data = response.json() if response.content else {}
+        payload = data.get("payload", data) if isinstance(data, dict) else data
+        items = payload if isinstance(payload, list) else []
+        meta = data.get("meta") if isinstance(data, dict) else {}
+        return {"ok": True, "contacts": items, "meta": meta or {}}
+
+
+async def list_all_contacts(
+    account_id: int,
+    *,
+    bot_token: str | None = None,
+    max_pages: int = 200,
+) -> dict:
+    """Pagina todos os contatos do Chatwoot (resolved contacts)."""
+    all_items: list = []
+    page = 1
+    while page <= max_pages:
+        result = await list_contacts_page(account_id, page=page, bot_token=bot_token)
+        if not result.get("ok"):
+            return result
+        batch = result.get("contacts") or []
+        if not batch:
+            break
+        all_items.extend(batch)
+        meta = result.get("meta") or {}
+        total_pages = meta.get("total_pages") or meta.get("totalPages")
+        if total_pages is not None:
+            try:
+                if page >= int(total_pages):
+                    break
+            except (TypeError, ValueError):
+                pass
+        elif len(batch) < 15:
+            break
+        page += 1
+    return {"ok": True, "contacts": all_items, "pages": page}
+
+
 async def create_contact(
     account_id: int,
     *,
