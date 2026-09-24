@@ -19,6 +19,7 @@ import {
   cancelCampaign,
   deleteAgent,
   deleteAgentTool,
+  deleteCampaign,
   deleteContact,
   deleteCustomField,
   deleteHttpTool,
@@ -303,6 +304,7 @@ export default function ClienteDetailPage() {
               sendCampaign={(id) => sendCampaign(clienteId, id)}
               scheduleCampaign={(id, at) => scheduleCampaign(clienteId, id, at)}
               cancelCampaign={(id) => cancelCampaign(clienteId, id)}
+              deleteCampaign={(id) => deleteCampaign(clienteId, id)}
               loadContacts={() => listContacts(clienteId)}
             />
           )}

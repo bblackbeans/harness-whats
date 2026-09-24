@@ -5,6 +5,7 @@ import { PortalShell } from "@/components/PortalShell";
 import {
   portalCancelCampaign,
   portalCreateCampaign,
+  portalDeleteCampaign,
   portalGetCampaign,
   portalListCampaigns,
   portalListContacts,
@@ -30,6 +31,7 @@ export default function PortalDisparosPage() {
         sendCampaign={portalSendCampaign}
         scheduleCampaign={portalScheduleCampaign}
         cancelCampaign={portalCancelCampaign}
+        deleteCampaign={portalDeleteCampaign}
         loadContacts={() => portalListContacts()}
       />
     </PortalShell>

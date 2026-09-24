@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { Modal } from "@/components/Modal";
 import type { Contact } from "@/lib/crm-types";
 
 export type Campaign = {
@@ -35,6 +36,7 @@ type Props = {
   sendCampaign: (id: number) => Promise<Campaign>;
   scheduleCampaign: (id: number, scheduled_at: string) => Promise<Campaign>;
   cancelCampaign: (id: number) => Promise<Campaign>;
+  deleteCampaign: (id: number) => Promise<unknown>;
   loadContacts: () => Promise<{ contacts: Contact[] }>;
 };
 
@@ -44,6 +46,9 @@ export function CampaignsManager(props: Props) {
   const [selected, setSelected] = useState<Campaign | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Campaign | null>(null);
+  const [sendOpen, setSendOpen] = useState(false);
 
   const [name, setName] = useState("Campanha WhatsApp");
   const [mode, setMode] = useState<"template" | "conversation">("template");
@@ -122,9 +127,14 @@ export function CampaignsManager(props: Props) {
     }
   }
 
-  async function onSend() {
+  function askSend() {
     if (!selected) return;
-    if (!confirm("Enviar campanha agora? Fora da janela 24h use template Meta aprovado.")) return;
+    setSendOpen(true);
+  }
+
+  async function confirmSend() {
+    if (!selected) return;
+    setSendOpen(false);
     setBusy(true);
     setError("");
     try {
@@ -164,6 +174,28 @@ export function CampaignsManager(props: Props) {
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao cancelar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function askDelete(campaign: Campaign) {
+    setPendingDelete(campaign);
+    setDeleteOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setBusy(true);
+    setError("");
+    try {
+      await props.deleteCampaign(pendingDelete.id);
+      if (selected?.id === pendingDelete.id) setSelected(null);
+      setDeleteOpen(false);
+      setPendingDelete(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir");
     } finally {
       setBusy(false);
     }
@@ -251,7 +283,8 @@ export function CampaignsManager(props: Props) {
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
               Contatos do CRM ({selectedContactIds.length} selecionados
-              {contactFilter.trim() ? ` · ${filteredContacts.length} filtrados` : ""} / {contacts.length})
+              {contactFilter.trim() ? ` · ${filteredContacts.length} filtrados` : ""} /{" "}
+              {contacts.length})
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -278,9 +311,7 @@ export function CampaignsManager(props: Props) {
                 className="btn-secondary text-xs"
                 onClick={() =>
                   setSelectedContactIds(
-                    selectedContactIds.length === contacts.length
-                      ? []
-                      : contacts.map((c) => c.id)
+                    selectedContactIds.length === contacts.length ? [] : contacts.map((c) => c.id)
                   )
                 }
               >
@@ -343,25 +374,43 @@ export function CampaignsManager(props: Props) {
           {campaigns.length === 0 && (
             <li className="text-sm text-gray-500 dark:text-gray-400">Nenhuma campanha.</li>
           )}
-          {campaigns.map((c) => (
-            <li key={c.id}>
-              <button
-                type="button"
-                onClick={() => openCampaign(c.id)}
-                className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${
-                  selected?.id === c.id
-                    ? "border-brand-500 bg-brand-50 dark:border-brand-400 dark:bg-brand-950/40"
-                    : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
-                }`}
-              >
-                <span className="font-medium text-gray-900 dark:text-gray-100">{c.name}</span>
-                <span className="mt-0.5 block text-xs text-gray-500">
-                  {c.status} · {c.mode}
-                  {c.template_name ? ` · ${c.template_name}` : ""} · {c.recipient_count ?? 0} dest.
-                </span>
-              </button>
-            </li>
-          ))}
+          {campaigns.map((c) => {
+            const isSelected = selected?.id === c.id;
+            return (
+              <li key={c.id} className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => openCampaign(c.id)}
+                  className={`min-w-0 flex-1 rounded-lg border px-3 py-2 text-left text-sm ${
+                    isSelected
+                      ? "border-brand-600 bg-brand-100 text-gray-900 dark:border-brand-400 dark:bg-brand-800 dark:text-white"
+                      : "border-gray-200 bg-white text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100"
+                  }`}
+                >
+                  <span className="block font-medium text-inherit">{c.name}</span>
+                  <span
+                    className={`mt-0.5 block text-xs ${
+                      isSelected
+                        ? "text-gray-800 dark:text-gray-100"
+                        : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
+                    {c.status} · {c.mode}
+                    {c.template_name ? ` · ${c.template_name}` : ""} · {c.recipient_count ?? 0} dest.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary shrink-0 self-stretch px-3 text-xs text-red-600 dark:text-red-400"
+                  disabled={busy || c.status === "running"}
+                  title={c.status === "running" ? "Aguarde a campanha terminar" : "Excluir"}
+                  onClick={() => askDelete(c)}
+                >
+                  Excluir
+                </button>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
@@ -369,7 +418,17 @@ export function CampaignsManager(props: Props) {
             <p className="text-sm text-gray-500">Selecione uma campanha.</p>
           ) : (
             <div className="space-y-3">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">{selected.name}</h3>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{selected.name}</h3>
+                <button
+                  type="button"
+                  className="btn-secondary text-xs text-red-600 dark:text-red-400"
+                  disabled={busy || selected.status === "running"}
+                  onClick={() => askDelete(selected)}
+                >
+                  Excluir campanha
+                </button>
+              </div>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Status: <strong>{selected.status}</strong>
                 {selected.scheduled_at ? ` · agendada ${selected.scheduled_at}` : ""}
@@ -386,7 +445,7 @@ export function CampaignsManager(props: Props) {
                 {(selected.status === "draft" ||
                   selected.status === "scheduled" ||
                   selected.status === "failed") && (
-                  <button type="button" className="btn-primary" disabled={busy} onClick={onSend}>
+                  <button type="button" className="btn-primary" disabled={busy} onClick={askSend}>
                     Enviar agora
                   </button>
                 )}
@@ -431,6 +490,38 @@ export function CampaignsManager(props: Props) {
           )}
         </div>
       </div>
+
+      <Modal
+        open={sendOpen}
+        title="Enviar campanha agora?"
+        message={
+          selected
+            ? `Confirma o envio de "${selected.name}" para ${selected.recipient_count ?? selected.recipients?.length ?? 0} destinatário(s)? Fora da janela de 24h use template Meta aprovado.`
+            : ""
+        }
+        confirmLabel="Enviar agora"
+        cancelLabel="Voltar"
+        onConfirm={confirmSend}
+        onCancel={() => setSendOpen(false)}
+      />
+
+      <Modal
+        open={deleteOpen}
+        title="Excluir campanha?"
+        message={
+          pendingDelete
+            ? `Tem certeza que deseja excluir "${pendingDelete.name}"? Esta ação não pode ser desfeita.`
+            : ""
+        }
+        confirmLabel="Excluir"
+        cancelLabel="Manter"
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setDeleteOpen(false);
+          setPendingDelete(null);
+        }}
+      />
     </div>
   );
 }

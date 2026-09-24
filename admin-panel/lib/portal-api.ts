@@ -238,6 +238,10 @@ export async function portalCancelCampaign(id: number) {
   );
 }
 
+export async function portalDeleteCampaign(id: number) {
+  return portalRequest(`${CRM}/campaigns/${id}`, { method: "DELETE" });
+}
+
 export async function portalListWebhooks() {
   return portalRequest<{ webhooks: InboundWebhook[] }>(`${CRM}/webhooks`);
 }

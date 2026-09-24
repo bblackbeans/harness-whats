@@ -508,6 +508,10 @@ export async function cancelCampaign(tenantId: string, campaignId: number) {
   );
 }
 
+export async function deleteCampaign(tenantId: string, campaignId: number) {
+  return request(`${crmBase(tenantId)}/campaigns/${campaignId}`, { method: "DELETE" });
+}
+
 export async function listInboundWebhooks(tenantId: string) {
   return request<{ webhooks: InboundWebhook[] }>(`${crmBase(tenantId)}/webhooks`);
 }

@@ -47,6 +47,7 @@ from harness_platform.schemas import (
 from harness_platform.campaign_service import (
     cancel_campaign,
     create_campaign,
+    delete_campaign,
     get_campaign,
     list_campaigns,
     run_campaign,
@@ -422,6 +423,19 @@ def build_crm_routes(
     ):
         try:
             return cancel_campaign(db, tenant_id, campaign_id)
+        except LookupError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @router.delete("/campaigns/{campaign_id}", status_code=status.HTTP_204_NO_CONTENT)
+    def api_delete_campaign(
+        campaign_id: int,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            delete_campaign(db, tenant_id, campaign_id)
         except LookupError as error:
             raise HTTPException(status_code=404, detail=str(error)) from error
         except ValueError as error:

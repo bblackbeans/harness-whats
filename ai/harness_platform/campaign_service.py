@@ -281,6 +281,20 @@ def cancel_campaign(db: Session, tenant_id: str, campaign_id: int) -> dict:
     return campaign_to_dict(row, include_recipients=True)
 
 
+def delete_campaign(db: Session, tenant_id: str, campaign_id: int) -> None:
+    row = (
+        db.query(DispatchCampaign)
+        .filter(DispatchCampaign.tenant_id == tenant_id, DispatchCampaign.id == campaign_id)
+        .first()
+    )
+    if not row:
+        raise LookupError("Campanha não encontrada")
+    if row.status == "running":
+        raise ValueError("Campanha em execução — aguarde terminar antes de excluir")
+    db.delete(row)
+    db.commit()
+
+
 async def _send_one_recipient(
     *,
     tenant_id: str,
