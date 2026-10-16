@@ -346,20 +346,21 @@ async def _send_one_recipient(
     except Exception:
         logger.warning("Falha ao upsert contato local no disparo", exc_info=True)
 
-    params = dict(campaign.default_params or {})
-    params.update(dict(recipient.variables or {}))
-
     if campaign.mode == "template":
+        # Meta rejeita (#132000) se a contagem de params divergir do template aprovado;
+        # recipient.variables traz dados internos do CRM e não deve ir aqui.
         response = await send_template(
             account_id=account_id,
             conversation_id=conversation_id,
             template_name=campaign.template_name,
             language=campaign.language or "pt_BR",
-            processed_params=params,
+            processed_params=dict(campaign.default_params or {}),
             content=campaign.message or campaign.template_name,
             bot_token=bot_token or None,
         )
     else:
+        params = dict(campaign.default_params or {})
+        params.update(dict(recipient.variables or {}))
         text = generate_dispatch_message(campaign.message, params, tenant_id=tenant_id)
         response = await send_message(
             account_id,
