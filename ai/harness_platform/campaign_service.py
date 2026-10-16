@@ -76,6 +76,7 @@ def campaign_to_dict(row: DispatchCampaign, *, include_recipients: bool = False)
         "started_at": row.started_at.isoformat() if row.started_at else None,
         "finished_at": row.finished_at.isoformat() if row.finished_at else None,
         "default_params": row.default_params or {},
+        "header_image_url": row.header_image_url or "",
         "error": row.error or "",
         "channel_note": CHANNEL_REQUIREMENTS,
         "counts": counts,
@@ -134,6 +135,12 @@ def create_campaign(db: Session, tenant_id: str, data: dict[str, Any]) -> dict:
         raise ValueError("template_name obrigatório no modo template (template Meta aprovado)")
     if mode == "conversation" and not str(data.get("message") or "").strip():
         raise ValueError("message obrigatório no modo conversation")
+    header_image_url = str(data.get("header_image_url") or "").strip()
+    if header_image_url and not header_image_url.lower().startswith("https://"):
+        raise ValueError(
+            "header_image_url precisa ser um link público começando com https:// "
+            "(ex.: https://site.com/imagem.jpg)"
+        )
 
     account_id, inbox_id, _token = _resolve_routing(
         tenant_id,
@@ -154,6 +161,7 @@ def create_campaign(db: Session, tenant_id: str, data: dict[str, Any]) -> dict:
         flow_id=data.get("flow_id"),
         status="draft",
         default_params=dict(data.get("default_params") or {}),
+        header_image_url=header_image_url,
     )
     db.add(row)
     db.flush()
@@ -349,12 +357,18 @@ async def _send_one_recipient(
     if campaign.mode == "template":
         # Meta rejeita (#132000) se a contagem de params divergir do template aprovado;
         # recipient.variables traz dados internos do CRM e não deve ir aqui.
+        processed_params = dict(campaign.default_params or {})
+        if campaign.header_image_url:
+            processed_params["header"] = {
+                "media_url": campaign.header_image_url,
+                "media_type": "image",
+            }
         response = await send_template(
             account_id=account_id,
             conversation_id=conversation_id,
             template_name=campaign.template_name,
             language=campaign.language or "pt_BR",
-            processed_params=dict(campaign.default_params or {}),
+            processed_params=processed_params,
             content=campaign.message or campaign.template_name,
             bot_token=bot_token or None,
         )

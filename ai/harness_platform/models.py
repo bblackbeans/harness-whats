@@ -398,6 +398,7 @@ class DispatchCampaign(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     default_params: Mapped[dict] = mapped_column(JSONB, default=dict)
+    header_image_url: Mapped[str] = mapped_column(Text, default="", server_default="")
     error: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

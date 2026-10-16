@@ -18,6 +18,7 @@ export type Campaign = {
   counts?: Record<string, number>;
   recipient_count?: number;
   channel_note?: string;
+  header_image_url?: string;
   error?: string;
   recipients?: Array<{
     id: number;
@@ -54,6 +55,7 @@ export function CampaignsManager(props: Props) {
   const [mode, setMode] = useState<"template" | "conversation">("template");
   const [templateName, setTemplateName] = useState("");
   const [language, setLanguage] = useState("pt_BR");
+  const [headerImageUrl, setHeaderImageUrl] = useState("");
   const [message, setMessage] = useState("");
   const [inboxId, setInboxId] = useState("");
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
@@ -102,6 +104,7 @@ export function CampaignsManager(props: Props) {
         template_name: templateName,
         language,
         message,
+        header_image_url: mode === "template" ? headerImageUrl.trim() : "",
         inbox_id: inboxId.trim() ? Number(inboxId) : undefined,
         contact_ids: selectedContactIds,
         phones,
@@ -109,6 +112,7 @@ export function CampaignsManager(props: Props) {
       setSelected(created);
       setSelectedContactIds([]);
       setExtraPhones("");
+      setHeaderImageUrl("");
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar campanha");
@@ -265,6 +269,20 @@ export function CampaignsManager(props: Props) {
                 onChange={(e) => setLanguage(e.target.value)}
               />
             </label>
+            <label className="block text-sm sm:col-span-2">
+              URL da imagem do cabeçalho (opcional)
+              <input
+                type="url"
+                className="input-field mt-1 w-full"
+                placeholder="https://site.com/imagem.jpg"
+                value={headerImageUrl}
+                onChange={(e) => setHeaderImageUrl(e.target.value)}
+              />
+              <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+                Obrigatório se o template foi aprovado com imagem no cabeçalho. Link público direto
+                https (.jpg/.png, até 5 MB).
+              </span>
+            </label>
           </div>
         ) : (
           <label className="block text-sm">
@@ -394,7 +412,8 @@ export function CampaignsManager(props: Props) {
                     }`}
                   >
                     {c.status} · {c.mode}
-                    {c.template_name ? ` · ${c.template_name}` : ""} · {c.recipient_count ?? 0} dest.
+                    {c.template_name ? ` · ${c.template_name}` : ""}
+                    {c.header_image_url ? " · com imagem" : ""} · {c.recipient_count ?? 0} dest.
                   </span>
                 </button>
                 <button
@@ -429,6 +448,7 @@ export function CampaignsManager(props: Props) {
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Status: <strong>{selected.status}</strong>
+                {selected.header_image_url ? " · com imagem" : ""}
                 {selected.scheduled_at ? ` · agendada ${selected.scheduled_at}` : ""}
               </p>
               {selected.error && (

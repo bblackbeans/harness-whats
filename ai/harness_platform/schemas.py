@@ -379,6 +379,7 @@ class CampaignCreate(BaseModel):
     agent_id: int | None = None
     flow_id: int | None = None
     default_params: dict[str, Any] = Field(default_factory=dict)
+    header_image_url: str = ""
     contact_ids: list[int] = Field(default_factory=list)
     phones: list[str] = Field(default_factory=list)
     recipients: list[CampaignRecipientIn] = Field(default_factory=list)
