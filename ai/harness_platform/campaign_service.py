@@ -77,6 +77,7 @@ def campaign_to_dict(row: DispatchCampaign, *, include_recipients: bool = False)
         "finished_at": row.finished_at.isoformat() if row.finished_at else None,
         "default_params": row.default_params or {},
         "header_image_url": row.header_image_url or "",
+        "schedule_id": row.schedule_id,
         "error": row.error or "",
         "channel_note": CHANNEL_REQUIREMENTS,
         "counts": counts,

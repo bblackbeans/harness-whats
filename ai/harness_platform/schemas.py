@@ -388,3 +388,23 @@ class CampaignCreate(BaseModel):
 class CampaignSchedule(BaseModel):
     scheduled_at: datetime
 
+
+class RecurringCampaignCreate(BaseModel):
+    name: str = "Disparo mensal"
+    mode: str = "template"
+    template_name: str = ""
+    language: str = "pt_BR"
+    message: str = ""
+    header_image_url: str = ""
+    inbox_id: int | None = None
+    contact_ids: list[int] = Field(default_factory=list)
+    phones: list[str] = Field(default_factory=list)
+    all_contacts: bool = False
+    day_of_month: int = 1
+    hour: int = 9
+    minute: int = 0
+
+
+class RecurringToggle(BaseModel):
+    active: bool
+

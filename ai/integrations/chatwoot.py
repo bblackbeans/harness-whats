@@ -1004,3 +1004,36 @@ async def ensure_contact_conversation(
         "chatwoot_contact_id": int(contact_id),
         "conversation_id": int(conversation_id) if conversation_id is not None else None,
     }
+
+
+async def list_inbox_templates(
+    account_id: int, inbox_id: int, *, bot_token: str | None = None
+) -> dict:
+    """Templates WhatsApp Cloud (Meta) sincronizados na inbox do Chatwoot."""
+    token = _api_token(bot_token)
+    if not CHATWOOT_BASE_URL or not token:
+        return {"ok": False, "error": "Chatwoot não configurado", "templates": []}
+    url = f"{CHATWOOT_BASE_URL}/api/v1/accounts/{account_id}/inboxes/{inbox_id}"
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(url, headers=_headers(token))
+        if response.status_code >= 400:
+            return {"ok": False, "error": response.text, "templates": []}
+        data = response.json()
+    except Exception as error:
+        return {"ok": False, "error": str(error), "templates": []}
+    raw = data.get("message_templates") or (data.get("provider_config") or {}).get("message_templates") or []
+    templates = []
+    for t in raw:
+        if not isinstance(t, dict) or not t.get("name"):
+            continue
+        templates.append(
+            {
+                "name": t.get("name"),
+                "language": t.get("language") or "pt_BR",
+                "status": str(t.get("status") or "").lower(),
+                "category": t.get("category") or "",
+                "components": t.get("components") or [],
+            }
+        )
+    return {"ok": True, "templates": templates}

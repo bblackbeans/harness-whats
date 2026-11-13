@@ -399,6 +399,7 @@ class DispatchCampaign(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     default_params: Mapped[dict] = mapped_column(JSONB, default=dict)
     header_image_url: Mapped[str] = mapped_column(Text, default="", server_default="")
+    schedule_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -431,3 +432,33 @@ class DispatchCampaignRecipient(Base):
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     campaign: Mapped["DispatchCampaign"] = relationship(back_populates="recipients")
+
+
+class CampaignSchedule(Base):
+    """Disparo recorrente mensal: a cada ciclo gera e envia uma DispatchCampaign."""
+
+    __tablename__ = "campaign_schedules"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    mode: Mapped[str] = mapped_column(String(32), default="template")
+    template_name: Mapped[str] = mapped_column(String(255), default="")
+    language: Mapped[str] = mapped_column(String(16), default="pt_BR")
+    message: Mapped[str] = mapped_column(Text, default="")
+    header_image_url: Mapped[str] = mapped_column(Text, default="", server_default="")
+    account_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    inbox_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    contact_ids: Mapped[list] = mapped_column(JSONB, default=list)
+    phones: Mapped[list] = mapped_column(JSONB, default=list)
+    all_contacts: Mapped[bool] = mapped_column(Boolean, default=False)
+    day_of_month: Mapped[int] = mapped_column(Integer, default=1)
+    hour: Mapped[int] = mapped_column(Integer, default=9)
+    minute: Mapped[int] = mapped_column(Integer, default=0)
+    timezone: Mapped[str] = mapped_column(String(64), default="America/Sao_Paulo")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_campaign_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_error: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

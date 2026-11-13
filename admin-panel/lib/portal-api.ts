@@ -467,3 +467,62 @@ export async function portalListFlowRuns(flowId?: number) {
 export async function portalGetFlowRun(id: number) {
   return portalRequest<FlowRun>(`/portal/api/flow-runs/${id}`);
 }
+
+export type RecurringCampaign = {
+  id: number;
+  name: string;
+  mode: string;
+  template_name: string;
+  language: string;
+  header_image_url: string;
+  recipient_count: number;
+  all_contacts: boolean;
+  day_of_month: number;
+  hour: number;
+  minute: number;
+  active: boolean;
+  next_run_at?: string | null;
+  last_run_at?: string | null;
+  last_campaign_id?: number | null;
+  last_error?: string;
+};
+
+export type MetaTemplate = {
+  name: string;
+  language: string;
+  status: string;
+  category?: string;
+  components: Array<Record<string, unknown>>;
+};
+
+export async function portalListRecurring() {
+  return portalRequest<{ schedules: RecurringCampaign[] }>(`${CRM}/campaign-schedules`);
+}
+
+export async function portalCreateRecurring(data: Record<string, unknown>) {
+  return portalRequest<RecurringCampaign>(`${CRM}/campaign-schedules`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function portalToggleRecurring(id: number, active: boolean) {
+  return portalRequest<RecurringCampaign>(`${CRM}/campaign-schedules/${id}/active`, {
+    method: "POST",
+    body: JSON.stringify({ active }),
+  });
+}
+
+export async function portalRunRecurring(id: number) {
+  return portalRequest(`${CRM}/campaign-schedules/${id}/run`, { method: "POST" });
+}
+
+export async function portalDeleteRecurring(id: number) {
+  return portalRequest(`${CRM}/campaign-schedules/${id}`, { method: "DELETE" });
+}
+
+export async function portalListTemplates() {
+  return portalRequest<{ ok: boolean; error?: string; templates: MetaTemplate[] }>(
+    `${CRM}/campaign-templates`
+  );
+}

@@ -4,6 +4,12 @@ import { CampaignsManager } from "@/components/crm/CampaignsManager";
 import { PortalShell } from "@/components/PortalShell";
 import {
   portalCancelCampaign,
+  portalCreateRecurring,
+  portalDeleteRecurring,
+  portalListRecurring,
+  portalListTemplates,
+  portalRunRecurring,
+  portalToggleRecurring,
   portalCreateCampaign,
   portalDeleteCampaign,
   portalGetCampaign,
@@ -21,7 +27,7 @@ export default function PortalDisparosPage() {
           Disparos WhatsApp
         </h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Campanhas com template Meta (oficial) via Chatwoot. Envie agora ou agende por data/hora.
+          Campanhas com template Meta (oficial) via Chatwoot. Envie agora, agende por data/hora ou deixe um disparo automático todo mês.
         </p>
       </div>
       <CampaignsManager
@@ -33,6 +39,14 @@ export default function PortalDisparosPage() {
         cancelCampaign={portalCancelCampaign}
         deleteCampaign={portalDeleteCampaign}
         loadContacts={() => portalListContacts()}
+        loadTemplates={portalListTemplates}
+        recurring={{
+          list: portalListRecurring,
+          create: portalCreateRecurring,
+          toggle: portalToggleRecurring,
+          run: portalRunRecurring,
+          remove: portalDeleteRecurring,
+        }}
       />
     </PortalShell>
   );

@@ -7,6 +7,7 @@ import logging
 import os
 
 from harness_platform.campaign_service import list_due_scheduled_campaigns, run_campaign
+from harness_platform.campaign_schedule_service import list_due_schedules, run_schedule
 from harness_platform.db import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,21 @@ async def _poll_loop() -> None:
                         tenant_id,
                         campaign_id,
                     )
+                finally:
+                    db.close()
+
+            db = SessionLocal()
+            try:
+                due_sched = [(r.tenant_id, r.id) for r in list_due_schedules(db)]
+            finally:
+                db.close()
+            for tenant_id, schedule_id in due_sched:
+                db = SessionLocal()
+                try:
+                    logger.info("Executando disparo recorrente tenant=%s id=%s", tenant_id, schedule_id)
+                    await run_schedule(db, tenant_id, schedule_id)
+                except Exception:
+                    logger.exception("Falha no disparo recorrente tenant=%s id=%s", tenant_id, schedule_id)
                 finally:
                     db.close()
         except Exception:

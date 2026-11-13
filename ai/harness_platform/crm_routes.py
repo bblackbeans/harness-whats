@@ -42,6 +42,8 @@ from harness_platform.schemas import (
     HttpToolUpdate,
     InboundWebhookCreate,
     InboundWebhookUpdate,
+    RecurringCampaignCreate,
+    RecurringToggle,
     SendableFileUpdate,
 )
 from harness_platform.campaign_service import (
@@ -52,6 +54,13 @@ from harness_platform.campaign_service import (
     list_campaigns,
     run_campaign,
     schedule_campaign,
+)
+from harness_platform.campaign_schedule_service import (
+    create_schedule,
+    delete_schedule,
+    list_schedules,
+    run_schedule,
+    set_schedule_active,
 )
 from harness_platform.sendable_file_service import (
     delete_sendable_file,
@@ -440,5 +449,71 @@ def build_crm_routes(
             raise HTTPException(status_code=404, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
+
+    # --- Disparos recorrentes mensais ---
+
+    @router.get("/campaign-schedules")
+    def api_list_schedules(tenant_id: str = Depends(get_tenant_id), db: Session = Depends(get_db)):
+        return {"schedules": list_schedules(db, tenant_id)}
+
+    @router.post("/campaign-schedules", status_code=status.HTTP_201_CREATED)
+    def api_create_schedule(
+        body: RecurringCampaignCreate,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            return create_schedule(db, tenant_id, body.model_dump())
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @router.post("/campaign-schedules/{schedule_id}/active")
+    def api_toggle_schedule(
+        schedule_id: int,
+        body: RecurringToggle,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            return set_schedule_active(db, tenant_id, schedule_id, body.active)
+        except LookupError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+
+    @router.post("/campaign-schedules/{schedule_id}/run")
+    async def api_run_schedule(
+        schedule_id: int,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            return await run_schedule(db, tenant_id, schedule_id)
+        except LookupError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @router.delete("/campaign-schedules/{schedule_id}", status_code=status.HTTP_204_NO_CONTENT)
+    def api_delete_schedule(
+        schedule_id: int,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            delete_schedule(db, tenant_id, schedule_id)
+        except LookupError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+
+    @router.get("/campaign-templates")
+    async def api_campaign_templates(
+        inbox_id: int | None = None, tenant_id: str = Depends(get_tenant_id)
+    ):
+        from harness_platform.campaign_service import _resolve_routing
+        from integrations.chatwoot import list_inbox_templates
+
+        try:
+            account_id, inbox, token = _resolve_routing(tenant_id, None, inbox_id)
+        except ValueError as error:
+            return {"ok": False, "error": str(error), "templates": []}
+        return await list_inbox_templates(account_id, inbox, bot_token=token or None)
 
     return router
