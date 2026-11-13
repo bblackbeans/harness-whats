@@ -512,6 +512,42 @@ export async function deleteCampaign(tenantId: string, campaignId: number) {
   return request(`${crmBase(tenantId)}/campaigns/${campaignId}`, { method: "DELETE" });
 }
 
+export async function listRecurringCampaigns(tenantId: string) {
+  return request<{ schedules: import("@/lib/portal-api").RecurringCampaign[] }>(
+    `${crmBase(tenantId)}/campaign-schedules`
+  );
+}
+
+export async function createRecurringCampaign(tenantId: string, data: Record<string, unknown>) {
+  return request<import("@/lib/portal-api").RecurringCampaign>(
+    `${crmBase(tenantId)}/campaign-schedules`,
+    { method: "POST", body: JSON.stringify(data) }
+  );
+}
+
+export async function toggleRecurringCampaign(tenantId: string, id: number, active: boolean) {
+  return request<import("@/lib/portal-api").RecurringCampaign>(
+    `${crmBase(tenantId)}/campaign-schedules/${id}/active`,
+    { method: "POST", body: JSON.stringify({ active }) }
+  );
+}
+
+export async function runRecurringCampaign(tenantId: string, id: number) {
+  return request(`${crmBase(tenantId)}/campaign-schedules/${id}/run`, { method: "POST" });
+}
+
+export async function deleteRecurringCampaign(tenantId: string, id: number) {
+  return request(`${crmBase(tenantId)}/campaign-schedules/${id}`, { method: "DELETE" });
+}
+
+export async function listCampaignTemplates(tenantId: string) {
+  return request<{
+    ok: boolean;
+    error?: string;
+    templates: import("@/lib/portal-api").MetaTemplate[];
+  }>(`${crmBase(tenantId)}/campaign-templates`);
+}
+
 export async function listInboundWebhooks(tenantId: string) {
   return request<{ webhooks: InboundWebhook[] }>(`${crmBase(tenantId)}/webhooks`);
 }

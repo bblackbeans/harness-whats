@@ -13,6 +13,12 @@ import {
   createContact,
   createCustomField,
   createCampaign,
+  createRecurringCampaign,
+  deleteRecurringCampaign,
+  listCampaignTemplates,
+  listRecurringCampaigns,
+  runRecurringCampaign,
+  toggleRecurringCampaign,
   createHttpTool,
   createInboundWebhook,
   createTenantUser,
@@ -306,6 +312,14 @@ export default function ClienteDetailPage() {
               cancelCampaign={(id) => cancelCampaign(clienteId, id)}
               deleteCampaign={(id) => deleteCampaign(clienteId, id)}
               loadContacts={() => listContacts(clienteId)}
+              loadTemplates={() => listCampaignTemplates(clienteId)}
+              recurring={{
+                list: () => listRecurringCampaigns(clienteId),
+                create: (data) => createRecurringCampaign(clienteId, data),
+                toggle: (id, active) => toggleRecurringCampaign(clienteId, id, active),
+                run: (id) => runRecurringCampaign(clienteId, id),
+                remove: (id) => deleteRecurringCampaign(clienteId, id),
+              }}
             />
           )}
           {section === "Integrações" && (
