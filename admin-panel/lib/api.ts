@@ -308,6 +308,13 @@ export async function createTenantUser(tenantId: string, data: { email: string; 
   });
 }
 
+export async function resetTenantUserPassword(tenantId: string, userId: number, password: string) {
+  return request(`/admin/api/tenants/${tenantId}/users/${userId}/password`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
 export type ModelChangeRequest = {
   id: number;
   tenant_id: string;

@@ -39,6 +39,24 @@ def create_tenant_user(
     return user
 
 
+def reset_tenant_user_password(
+    db: Session, *, tenant_id: str, user_id: int, password: str
+) -> TenantUser:
+    if len(password) < 8:
+        raise ValueError("A senha deve ter pelo menos 8 caracteres")
+    user = (
+        db.query(TenantUser)
+        .filter(TenantUser.tenant_id == tenant_id, TenantUser.id == user_id)
+        .first()
+    )
+    if not user:
+        raise LookupError("Usuário não encontrado")
+    user.password_hash = hash_password(password)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def list_tenant_users(db: Session, tenant_id: str) -> list[TenantUser]:
     return db.query(TenantUser).filter(TenantUser.tenant_id == tenant_id).order_by(TenantUser.email).all()
 

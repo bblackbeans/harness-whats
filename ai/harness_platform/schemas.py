@@ -160,6 +160,10 @@ class TenantUserCreate(BaseModel):
     name: str = ""
 
 
+class TenantUserPasswordReset(BaseModel):
+    password: str
+
+
 class ModelChangeRequestCreate(BaseModel):
     requested_model_id: int
     reason: str = ""

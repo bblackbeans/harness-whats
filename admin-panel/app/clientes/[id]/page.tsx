@@ -48,6 +48,7 @@ import {
   listLlmModels,
   listSendableFiles,
   listTenantUsers,
+  resetTenantUserPassword,
   regenerateWebhookSecret,
   reindexKnowledge,
   scheduleCampaign,
@@ -108,6 +109,9 @@ export default function ClienteDetailPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [knowledge, setKnowledge] = useState<Array<{ name: string; size: number }>>([]);
   const [llmModels, setLlmModels] = useState<Array<{ id: number; display_name: string; model_id: string }>>([]);
+  const [resetUserId, setResetUserId] = useState<number | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetMsg, setResetMsg] = useState("");
   const [portalUsers, setPortalUsers] = useState<Array<{ id: number; email: string; name: string }>>([]);
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
@@ -536,11 +540,56 @@ export default function ClienteDetailPage() {
             ) : (
               <div>
                 <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">Usuários cadastrados</h3>
+                {resetMsg && (
+                  <p className="mb-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300">
+                    {resetMsg}
+                  </p>
+                )}
                 <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 text-sm dark:divide-gray-800 dark:border-gray-800">
                   {portalUsers.map((u) => (
-                    <li key={u.id} className="flex justify-between px-4 py-3">
-                      <span className="font-medium">{u.name}</span>
-                      <span className="text-gray-500 dark:text-gray-400">{u.email}</span>
+                    <li key={u.id} className="space-y-2 px-4 py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium">{u.name}</span>
+                        <span className="text-gray-500 dark:text-gray-400">{u.email}</span>
+                        <button
+                          type="button"
+                          className="btn-secondary text-xs"
+                          onClick={() => {
+                            setResetUserId(resetUserId === u.id ? null : u.id);
+                            setResetPassword("");
+                            setResetMsg("");
+                          }}
+                        >
+                          Redefinir senha
+                        </button>
+                      </div>
+                      {resetUserId === u.id && (
+                        <div className="flex flex-wrap items-start gap-2">
+                          <PasswordInput
+                            className="min-w-[16rem] flex-1"
+                            placeholder="Nova senha (mín. 8 caracteres)"
+                            value={resetPassword}
+                            onChange={(e) => setResetPassword(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="btn-primary"
+                            disabled={resetPassword.length < 8}
+                            onClick={async () => {
+                              try {
+                                await resetTenantUserPassword(clienteId, u.id, resetPassword);
+                                setResetMsg(`Senha de ${u.email} alterada. Informe a nova senha ao cliente.`);
+                                setResetUserId(null);
+                                setResetPassword("");
+                              } catch (err) {
+                                setError(err instanceof Error ? err.message : "Erro ao redefinir senha");
+                              }
+                            }}
+                          >
+                            Salvar nova senha
+                          </button>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

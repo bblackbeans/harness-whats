@@ -20,6 +20,7 @@ from harness_platform.schemas import (
     TenantResponse,
     TenantUpdate,
     TenantUserCreate,
+    TenantUserPasswordReset,
     TokenResponse,
     ProblemaUpdate,
     ProblemaResponse,
@@ -73,6 +74,7 @@ from harness_platform.portal_service import (
     approve_model_change_request,
     create_tenant_user,
     list_model_change_requests,
+    reset_tenant_user_password,
     list_tenant_users,
     reject_model_change_request,
 )
@@ -651,6 +653,28 @@ def tenant_users_create(
         raise HTTPException(status_code=400, detail=str(error)) from error
     log_audit(db, admin_email=admin.email, action="tenant.user.create", tenant_id=tenant_id, detail=body.email)
     return {"id": user.id, "email": user.email, "name": user.name}
+
+
+@router.post("/tenants/{tenant_id}/users/{user_id}/password")
+def tenant_users_reset_password(
+    tenant_id: str,
+    user_id: int,
+    body: TenantUserPasswordReset,
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin),
+):
+    try:
+        user = reset_tenant_user_password(
+            db, tenant_id=tenant_id, user_id=user_id, password=body.password
+        )
+    except LookupError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    log_audit(
+        db, admin_email=admin.email, action="tenant.user.password_reset", tenant_id=tenant_id, detail=user.email
+    )
+    return {"id": user.id, "email": user.email}
 
 
 # --- Model change requests ---
