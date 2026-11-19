@@ -53,6 +53,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/media/{tenant_id}/{filename}", include_in_schema=False)
+def public_media(tenant_id: str, filename: str):
+    """Imagem pública do banco de mídia (a Meta/WhatsApp baixa daqui)."""
+    from fastapi.responses import FileResponse
+
+    from harness_platform.media_service import resolve_public_media
+
+    with SessionLocal() as db:
+        found = resolve_public_media(db, tenant_id, filename)
+    if not found:
+        raise HTTPException(status_code=404, detail="Imagem não encontrada")
+    row, path = found
+    return FileResponse(
+        path,
+        media_type=row.mime_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 app.include_router(admin_router)
 app.include_router(portal_router)
 

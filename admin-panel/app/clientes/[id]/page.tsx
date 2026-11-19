@@ -47,6 +47,9 @@ import {
   listKnowledge,
   listLlmModels,
   listSendableFiles,
+  listMedia,
+  uploadMedia,
+  deleteMedia,
   listTenantUsers,
   resetTenantUserPassword,
   regenerateWebhookSecret,
@@ -70,6 +73,7 @@ import { ContactsManager } from "@/components/crm/ContactsManager";
 import { CampaignsManager } from "@/components/crm/CampaignsManager";
 import { IntegrationsManager } from "@/components/crm/IntegrationsManager";
 import { FilesManager } from "@/components/crm/FilesManager";
+import { MediaLibrary } from "@/components/crm/MediaLibrary";
 import { AgentsManager } from "@/components/crm/AgentsManager";
 import { OrchestratorManager } from "@/components/crm/OrchestratorManager";
 import { ToolsManager } from "@/components/crm/ToolsManager";
@@ -88,6 +92,7 @@ const SECTIONS = [
   "Campos",
   "Contatos",
   "Disparos",
+  "Imagens",
   "Integrações",
   "Orquestrador",
   "Agentes",
@@ -285,6 +290,7 @@ export default function ClienteDetailPage() {
         section === "Disparos" ||
         section === "Integrações" ||
         section === "Arquivos" ||
+        section === "Imagens" ||
         section === "Orquestrador" ||
         section === "Agentes" ||
         section === "Tools") && (
@@ -317,6 +323,7 @@ export default function ClienteDetailPage() {
               deleteCampaign={(id) => deleteCampaign(clienteId, id)}
               loadContacts={() => listContacts(clienteId)}
               loadTemplates={() => listCampaignTemplates(clienteId)}
+              media={{ load: () => listMedia(clienteId), upload: (file) => uploadMedia(clienteId, file) }}
               recurring={{
                 list: () => listRecurringCampaigns(clienteId),
                 create: (data) => createRecurringCampaign(clienteId, data),
@@ -337,6 +344,13 @@ export default function ClienteDetailPage() {
               createTool={(data) => createHttpTool(clienteId, data)}
               deleteTool={(id) => deleteHttpTool(clienteId, id)}
               loadFields={() => listCustomFields(clienteId)}
+            />
+          )}
+          {section === "Imagens" && (
+            <MediaLibrary
+              load={() => listMedia(clienteId)}
+              upload={(file) => uploadMedia(clienteId, file)}
+              remove={(id) => deleteMedia(clienteId, id)}
             />
           )}
           {section === "Arquivos" && (

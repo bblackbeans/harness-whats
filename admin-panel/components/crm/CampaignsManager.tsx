@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { Modal } from "@/components/Modal";
-import type { Contact } from "@/lib/crm-types";
+import { MediaLibrary, mediaPublicUrl } from "@/components/crm/MediaLibrary";
+import type { Contact, MediaItem } from "@/lib/crm-types";
 import type { MetaTemplate, RecurringCampaign } from "@/lib/portal-api";
 import { WhatsAppPreview } from "@/components/crm/WhatsAppPreview";
 
@@ -175,6 +176,10 @@ type Props = {
   deleteCampaign: (id: number) => Promise<unknown>;
   loadContacts: () => Promise<{ contacts: Contact[] }>;
   /** Opcional: habilita lista de templates com pré-visualização. */
+  media?: {
+    load: () => Promise<{ media: MediaItem[] }>;
+    upload: (file: File) => Promise<MediaItem>;
+  };
   loadTemplates?: () => Promise<{ ok: boolean; error?: string; templates: MetaTemplate[] }>;
   /** Opcional: habilita disparos recorrentes mensais. */
   recurring?: {
@@ -209,6 +214,7 @@ export function CampaignsManager(props: Props) {
   const [repeatTime, setRepeatTime] = useState("09:00");
   const [allContacts, setAllContacts] = useState(false);
   const [notice, setNotice] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [runNow, setRunNow] = useState<RecurringCampaign | null>(null);
   const [deleteSchedule, setDeleteSchedule] = useState<RecurringCampaign | null>(null);
 
@@ -534,6 +540,15 @@ export function CampaignsManager(props: Props) {
                 value={headerImageUrl}
                 onChange={(e) => setHeaderImageUrl(e.target.value)}
               />
+              {props.media && (
+                <button
+                  type="button"
+                  className="btn-secondary mt-2 px-3 py-1.5 text-xs"
+                  onClick={() => setPickerOpen(true)}
+                >
+                  Escolher do banco de imagens
+                </button>
+              )}
               <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
                 Obrigatório se o template foi aprovado com imagem no cabeçalho. Link público direto
                 https (.jpg/.png, até 5 MB).
@@ -1024,6 +1039,27 @@ export function CampaignsManager(props: Props) {
           )}
         </div>
       </div>
+
+      {pickerOpen && props.media && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4">
+          <div className="card max-h-[85vh] w-full max-w-3xl overflow-y-auto">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Banco de imagens</h3>
+              <button type="button" className="btn-secondary" onClick={() => setPickerOpen(false)}>
+                Fechar
+              </button>
+            </div>
+            <MediaLibrary
+              load={props.media.load}
+              upload={props.media.upload}
+              onSelect={(item) => {
+                setHeaderImageUrl(mediaPublicUrl(item));
+                setPickerOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <Modal
         open={!!runNow}

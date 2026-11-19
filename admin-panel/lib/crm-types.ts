@@ -53,3 +53,16 @@ export type SendableFile = {
   mime_type: string;
   size_bytes: number;
 };
+
+export type MediaItem = {
+  id: number;
+  original_name: string;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  width: number | null;
+  height: number | null;
+  path: string;
+  url: string | null;
+  created_at: string | null;
+};

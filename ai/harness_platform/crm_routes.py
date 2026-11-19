@@ -62,6 +62,7 @@ from harness_platform.campaign_schedule_service import (
     run_schedule,
     set_schedule_active,
 )
+from harness_platform.media_service import delete_media, list_media, save_media
 from harness_platform.sendable_file_service import (
     delete_sendable_file,
     list_sendable_files,
@@ -366,6 +367,35 @@ def build_crm_routes(
     ):
         try:
             delete_sendable_file(db, tenant_id, file_id)
+        except LookupError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+
+    # --- Banco de imagens (links públicos) ---
+
+    @router.get("/media")
+    def api_list_media(tenant_id: str = Depends(get_tenant_id), db: Session = Depends(get_db)):
+        return {"media": list_media(db, tenant_id)}
+
+    @router.post("/media", status_code=status.HTTP_201_CREATED)
+    async def api_upload_media(
+        file: UploadFile = File(...),
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        content = await file.read(5 * 1024 * 1024 + 1)
+        try:
+            return save_media(db, tenant_id, original_name=file.filename or "imagem", content=content)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @router.delete("/media/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
+    def api_delete_media(
+        media_id: int,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            delete_media(db, tenant_id, media_id)
         except LookupError as error:
             raise HTTPException(status_code=404, detail=str(error)) from error
 

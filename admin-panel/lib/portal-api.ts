@@ -1,6 +1,6 @@
 import { getApiBase } from "./api-base";
-import type { Contact, CustomField, HttpTool, InboundWebhook, SendableFile } from "./crm-types";
-export type { Contact, CustomField, HttpTool, InboundWebhook, SendableFile } from "./crm-types";
+import type { Contact, CustomField, HttpTool, InboundWebhook, SendableFile, MediaItem } from "./crm-types";
+export type { Contact, CustomField, HttpTool, InboundWebhook, SendableFile, MediaItem } from "./crm-types";
 import type { AgentToolBinding, AgentToolItem, FlowItem, FlowRun, TenantAgent } from "./flow-types";
 export type { AgentToolBinding, AgentToolItem, FlowItem, FlowRun, TenantAgent } from "./flow-types";
 
@@ -525,4 +525,28 @@ export async function portalListTemplates() {
   return portalRequest<{ ok: boolean; error?: string; templates: MetaTemplate[] }>(
     `${CRM}/campaign-templates`
   );
+}
+
+export async function portalListMedia() {
+  return portalRequest<{ media: MediaItem[] }>(`${CRM}/media`);
+}
+
+export async function portalUploadMedia(file: File) {
+  const token = localStorage.getItem("portal_access_token");
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_BASE}${CRM}/media`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(typeof body.detail === "string" ? body.detail : "Falha no upload");
+  }
+  return res.json() as Promise<MediaItem>;
+}
+
+export async function portalDeleteMedia(mediaId: number) {
+  return portalRequest(`${CRM}/media/${mediaId}`, { method: "DELETE" });
 }

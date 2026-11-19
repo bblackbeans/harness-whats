@@ -8,6 +8,8 @@ import {
   portalDeleteRecurring,
   portalListRecurring,
   portalListTemplates,
+  portalListMedia,
+  portalUploadMedia,
   portalRunRecurring,
   portalToggleRecurring,
   portalCreateCampaign,
@@ -40,6 +42,7 @@ export default function PortalDisparosPage() {
         deleteCampaign={portalDeleteCampaign}
         loadContacts={() => portalListContacts()}
         loadTemplates={portalListTemplates}
+        media={{ load: portalListMedia, upload: portalUploadMedia }}
         recurring={{
           list: portalListRecurring,
           create: portalCreateRecurring,
