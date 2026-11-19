@@ -185,6 +185,7 @@ type Props = {
   recurring?: {
     list: () => Promise<{ schedules: RecurringCampaign[] }>;
     create: (data: Record<string, unknown>) => Promise<RecurringCampaign>;
+    update: (id: number, data: Record<string, unknown>) => Promise<RecurringCampaign>;
     toggle: (id: number, active: boolean) => Promise<RecurringCampaign>;
     run: (id: number) => Promise<unknown>;
     remove: (id: number) => Promise<unknown>;
@@ -215,6 +216,58 @@ export function CampaignsManager(props: Props) {
   const [allContacts, setAllContacts] = useState(false);
   const [notice, setNotice] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<"new" | "edit">("new");
+  const [editing, setEditing] = useState<RecurringCampaign | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    template_name: "",
+    language: "pt_BR",
+    message: "",
+    header_image_url: "",
+    day_of_month: 1,
+    time: "09:00",
+  });
+  const [editError, setEditError] = useState("");
+
+  function openEdit(r: RecurringCampaign) {
+    setEditing(r);
+    setEditError("");
+    setEditForm({
+      name: r.name,
+      template_name: r.template_name || "",
+      language: r.language || "pt_BR",
+      message: r.message || "",
+      header_image_url: r.header_image_url || "",
+      day_of_month: r.day_of_month,
+      time: `${String(r.hour).padStart(2, "0")}:${String(r.minute).padStart(2, "0")}`,
+    });
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    const [hh, mm] = editForm.time.split(":").map((n) => parseInt(n, 10));
+    setBusy(true);
+    setEditError("");
+    try {
+      await props.recurring!.update(editing.id, {
+        name: editForm.name,
+        template_name: editForm.template_name,
+        language: editForm.language,
+        message: editForm.message,
+        header_image_url: editForm.header_image_url.trim(),
+        day_of_month: editForm.day_of_month,
+        hour: hh,
+        minute: mm,
+      });
+      setEditing(null);
+      setNotice("Disparo recorrente atualizado. A próxima execução já usa os novos dados.");
+      await refresh();
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : "Erro ao salvar");
+    } finally {
+      setBusy(false);
+    }
+  }
   const [runNow, setRunNow] = useState<RecurringCampaign | null>(null);
   const [deleteSchedule, setDeleteSchedule] = useState<RecurringCampaign | null>(null);
 
@@ -544,7 +597,10 @@ export function CampaignsManager(props: Props) {
                 <button
                   type="button"
                   className="btn-secondary mt-2 px-3 py-1.5 text-xs"
-                  onClick={() => setPickerOpen(true)}
+                  onClick={() => {
+                    setPickerTarget("new");
+                    setPickerOpen(true);
+                  }}
                 >
                   Escolher do banco de imagens
                 </button>
@@ -757,6 +813,14 @@ export function CampaignsManager(props: Props) {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="btn-secondary text-xs"
+                    disabled={busy}
+                    onClick={() => openEdit(r)}
+                  >
+                    Editar
+                  </button>
                   <button
                     type="button"
                     className="btn-secondary text-xs"
@@ -1040,6 +1104,117 @@ export function CampaignsManager(props: Props) {
         </div>
       </div>
 
+      {editing && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-900/60 p-4">
+          <div className="card max-h-[90vh] w-full max-w-lg space-y-3 overflow-y-auto">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar disparo recorrente</h3>
+            <label className="block text-sm">
+              Nome
+              <input
+                className="input-field mt-1 w-full"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </label>
+            {editing.mode === "template" ? (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    Template Meta
+                    <input
+                      className="input-field mt-1 w-full"
+                      value={editForm.template_name}
+                      onChange={(e) => setEditForm({ ...editForm, template_name: e.target.value })}
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    Idioma
+                    <input
+                      className="input-field mt-1 w-full"
+                      value={editForm.language}
+                      onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
+                    />
+                  </label>
+                </div>
+                <label className="block text-sm">
+                  URL da imagem do cabeçalho
+                  <input
+                    type="url"
+                    className="input-field mt-1 w-full"
+                    placeholder="https://site.com/imagem.jpg (vazio = sem imagem)"
+                    value={editForm.header_image_url}
+                    onChange={(e) => setEditForm({ ...editForm, header_image_url: e.target.value })}
+                  />
+                </label>
+                <div className="flex items-center gap-3">
+                  {props.media && (
+                    <button
+                      type="button"
+                      className="btn-secondary px-3 py-1.5 text-xs"
+                      onClick={() => {
+                        setPickerTarget("edit");
+                        setPickerOpen(true);
+                      }}
+                    >
+                      Escolher do banco de imagens
+                    </button>
+                  )}
+                  {editForm.header_image_url.trim() && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={editForm.header_image_url.trim()}
+                      alt="Pré-visualização"
+                      className="h-12 w-12 rounded border border-gray-200 object-cover dark:border-gray-700"
+                    />
+                  )}
+                </div>
+              </>
+            ) : (
+              <label className="block text-sm">
+                Mensagem
+                <textarea
+                  className="input-field mt-1 w-full"
+                  rows={3}
+                  value={editForm.message}
+                  onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
+                />
+              </label>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm">
+                Dia do mês
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  className="input-field mt-1 w-full"
+                  value={editForm.day_of_month}
+                  onChange={(e) => setEditForm({ ...editForm, day_of_month: Number(e.target.value) })}
+                />
+              </label>
+              <label className="block text-sm">
+                Horário
+                <input
+                  type="time"
+                  className="input-field mt-1 w-full"
+                  value={editForm.time}
+                  onChange={(e) => setEditForm({ ...editForm, time: e.target.value })}
+                />
+              </label>
+            </div>
+            {editError && <p className="text-sm text-red-600 dark:text-red-400">{editError}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" className="btn-secondary" onClick={() => setEditing(null)}>
+                Cancelar
+              </button>
+              <button type="button" className="btn-primary" disabled={busy} onClick={() => void saveEdit()}>
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {pickerOpen && props.media && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4">
           <div className="card max-h-[85vh] w-full max-w-3xl overflow-y-auto">
@@ -1053,7 +1228,11 @@ export function CampaignsManager(props: Props) {
               load={props.media.load}
               upload={props.media.upload}
               onSelect={(item) => {
-                setHeaderImageUrl(mediaPublicUrl(item));
+                if (pickerTarget === "edit") {
+                  setEditForm((f) => ({ ...f, header_image_url: mediaPublicUrl(item) }));
+                } else {
+                  setHeaderImageUrl(mediaPublicUrl(item));
+                }
                 setPickerOpen(false);
               }}
             />

@@ -474,6 +474,7 @@ export type RecurringCampaign = {
   mode: string;
   template_name: string;
   language: string;
+  message?: string;
   header_image_url: string;
   recipient_count: number;
   all_contacts: boolean;
@@ -502,6 +503,13 @@ export async function portalListRecurring() {
 export async function portalCreateRecurring(data: Record<string, unknown>) {
   return portalRequest<RecurringCampaign>(`${CRM}/campaign-schedules`, {
     method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function portalUpdateRecurring(id: number, data: Record<string, unknown>) {
+  return portalRequest<RecurringCampaign>(`${CRM}/campaign-schedules/${id}`, {
+    method: "PUT",
     body: JSON.stringify(data),
   });
 }

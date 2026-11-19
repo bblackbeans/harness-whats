@@ -138,6 +138,42 @@ def create_schedule(db: Session, tenant_id: str, data: dict[str, Any]) -> dict:
     return schedule_to_dict(row)
 
 
+def update_schedule(db: Session, tenant_id: str, schedule_id: int, data: dict[str, Any]) -> dict:
+    """Edita campos do disparo recorrente (destinatários e caixa de entrada permanecem)."""
+    row = _get(db, tenant_id, schedule_id)
+    if "name" in data and data["name"] is not None:
+        row.name = str(data["name"]).strip() or row.name
+    if "template_name" in data and data["template_name"] is not None:
+        row.template_name = str(data["template_name"]).strip()
+    if "language" in data and data["language"] is not None:
+        row.language = str(data["language"]).strip() or "pt_BR"
+    if "message" in data and data["message"] is not None:
+        row.message = str(data["message"])
+    if "header_image_url" in data and data["header_image_url"] is not None:
+        header = str(data["header_image_url"]).strip()
+        if header and not header.lower().startswith("https://"):
+            raise ValueError("header_image_url precisa começar com https://")
+        row.header_image_url = header
+    if "all_contacts" in data and data["all_contacts"] is not None:
+        row.all_contacts = bool(data["all_contacts"])
+    if row.mode == "template" and not (row.template_name or "").strip():
+        raise ValueError("template_name obrigatório no modo template")
+    if row.mode == "conversation" and not (row.message or "").strip():
+        raise ValueError("message obrigatório no modo conversation")
+    day = int(data["day_of_month"]) if data.get("day_of_month") is not None else row.day_of_month
+    hour = int(data["hour"]) if data.get("hour") is not None else row.hour
+    minute = int(data["minute"]) if data.get("minute") is not None else row.minute
+    if not 1 <= day <= 31 or not 0 <= hour <= 23 or not 0 <= minute <= 59:
+        raise ValueError("Dia (1-31), hora (0-23) ou minuto (0-59) inválidos")
+    if (day, hour, minute) != (row.day_of_month, row.hour, row.minute):
+        row.day_of_month, row.hour, row.minute = day, hour, minute
+        if row.active:
+            row.next_run_at = compute_next_run(day, hour, minute, row.timezone)
+    db.commit()
+    db.refresh(row)
+    return schedule_to_dict(row)
+
+
 def set_schedule_active(db: Session, tenant_id: str, schedule_id: int, active: bool) -> dict:
     row = _get(db, tenant_id, schedule_id)
     row.active = active

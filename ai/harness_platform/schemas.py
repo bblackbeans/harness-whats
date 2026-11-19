@@ -409,6 +409,18 @@ class RecurringCampaignCreate(BaseModel):
     minute: int = 0
 
 
+class RecurringUpdate(BaseModel):
+    name: str | None = None
+    template_name: str | None = None
+    language: str | None = None
+    message: str | None = None
+    header_image_url: str | None = None
+    all_contacts: bool | None = None
+    day_of_month: int | None = None
+    hour: int | None = None
+    minute: int | None = None
+
+
 class RecurringToggle(BaseModel):
     active: bool
 

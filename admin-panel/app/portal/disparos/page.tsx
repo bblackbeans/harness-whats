@@ -12,6 +12,7 @@ import {
   portalUploadMedia,
   portalRunRecurring,
   portalToggleRecurring,
+  portalUpdateRecurring,
   portalCreateCampaign,
   portalDeleteCampaign,
   portalGetCampaign,
@@ -46,6 +47,7 @@ export default function PortalDisparosPage() {
         recurring={{
           list: portalListRecurring,
           create: portalCreateRecurring,
+          update: portalUpdateRecurring,
           toggle: portalToggleRecurring,
           run: portalRunRecurring,
           remove: portalDeleteRecurring,

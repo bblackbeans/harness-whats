@@ -44,6 +44,7 @@ from harness_platform.schemas import (
     InboundWebhookUpdate,
     RecurringCampaignCreate,
     RecurringToggle,
+    RecurringUpdate,
     SendableFileUpdate,
 )
 from harness_platform.campaign_service import (
@@ -61,6 +62,7 @@ from harness_platform.campaign_schedule_service import (
     list_schedules,
     run_schedule,
     set_schedule_active,
+    update_schedule,
 )
 from harness_platform.media_service import delete_media, list_media, save_media
 from harness_platform.sendable_file_service import (
@@ -494,6 +496,20 @@ def build_crm_routes(
     ):
         try:
             return create_schedule(db, tenant_id, body.model_dump())
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @router.put("/campaign-schedules/{schedule_id}")
+    def api_update_schedule(
+        schedule_id: int,
+        body: RecurringUpdate,
+        tenant_id: str = Depends(get_tenant_id),
+        db: Session = Depends(get_db),
+    ):
+        try:
+            return update_schedule(db, tenant_id, schedule_id, body.model_dump(exclude_unset=True))
+        except LookupError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
 

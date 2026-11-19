@@ -19,6 +19,7 @@ import {
   listRecurringCampaigns,
   runRecurringCampaign,
   toggleRecurringCampaign,
+  updateRecurringCampaign,
   createHttpTool,
   createInboundWebhook,
   createTenantUser,
@@ -327,6 +328,7 @@ export default function ClienteDetailPage() {
               recurring={{
                 list: () => listRecurringCampaigns(clienteId),
                 create: (data) => createRecurringCampaign(clienteId, data),
+                update: (id, data) => updateRecurringCampaign(clienteId, id, data),
                 toggle: (id, active) => toggleRecurringCampaign(clienteId, id, active),
                 run: (id) => runRecurringCampaign(clienteId, id),
                 remove: (id) => deleteRecurringCampaign(clienteId, id),

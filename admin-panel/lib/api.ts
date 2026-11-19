@@ -532,6 +532,13 @@ export async function createRecurringCampaign(tenantId: string, data: Record<str
   );
 }
 
+export async function updateRecurringCampaign(tenantId: string, id: number, data: Record<string, unknown>) {
+  return request<import("@/lib/portal-api").RecurringCampaign>(
+    `${crmBase(tenantId)}/campaign-schedules/${id}`,
+    { method: "PUT", body: JSON.stringify(data) }
+  );
+}
+
 export async function toggleRecurringCampaign(tenantId: string, id: number, active: boolean) {
   return request<import("@/lib/portal-api").RecurringCampaign>(
     `${crmBase(tenantId)}/campaign-schedules/${id}/active`,
